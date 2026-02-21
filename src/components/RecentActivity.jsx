@@ -1,14 +1,15 @@
 import React from 'react';
+import { Settings, User, Smartphone } from 'lucide-react';
 
 const RecentActivity = ({ onNavigate, repairs = [] }) => {
-    // Show the 5 most recent repairs
-    const recentRepairs = repairs.slice(0, 5);
+    // Show more items to trigger scroll
+    const recentRepairs = repairs.slice(0, 20);
 
-    const getStatusBadge = (status) => {
+    const getStatusColor = (status) => {
         switch (status) {
-            case 'Completed': return 'status-completed';
-            case 'In Progress': return 'status-in-progress';
-            case 'Pending': return 'status-pending';
+            case 'Completed': return 'pulse-completed';
+            case 'In Progress': return 'pulse-in-progress';
+            case 'Pending': return 'pulse-pending';
             default: return '';
         }
     };
@@ -34,16 +35,26 @@ const RecentActivity = ({ onNavigate, repairs = [] }) => {
                     recentRepairs.map((repair) => (
                         <div key={repair.id} className="activity-item">
                             <div className="activity-info">
-                                <h4>{repair.problem}</h4>
-                                <p>{repair.customer} • {repair.device}</p>
+                                <h4 style={{ fontSize: '1rem', fontWeight: 600, color: 'var(--text-primary)', margin: 0, letterSpacing: '-0.01em' }}>
+                                    {repair.customer}
+                                </h4>
+                                <div className="activity-details" style={{ marginTop: '0.35rem' }}>
+                                    <span className="activity-detail-item">
+                                        <Smartphone size={13} color="var(--text-secondary)" /> {repair.device}
+                                    </span>
+                                </div>
                             </div>
-                            <div className="activity-meta">
-                                <span className={`status-badge ${getStatusBadge(repair.status)}`}>
-                                    {repair.status}
-                                </span>
-                            </div>
-                            <div className="activity-cost" style={{ fontWeight: 600, marginLeft: 'auto' }}>
-                                {repair.cost}
+
+                            <div className="activity-status-cost">
+                                <div className="activity-cost">
+                                    {repair.cost}
+                                </div>
+                                <div className="activity-meta" title={repair.status}>
+                                    <div className="status-indicator">
+                                        <div className={`pulse-dot ${getStatusColor(repair.status)}`}></div>
+                                        <span>{repair.status}</span>
+                                    </div>
+                                </div>
                             </div>
                         </div>
                     ))

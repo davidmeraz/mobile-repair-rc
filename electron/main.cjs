@@ -8,7 +8,7 @@ let mainWindow;
 function createSplashWindow() {
     splashWindow = new BrowserWindow({
         width: 400,
-        height: 600,
+        height: 400,
         backgroundColor: '#020617', // Matching the CSS background
         frame: false, // Frameless
         alwaysOnTop: true,
@@ -28,8 +28,8 @@ function createMainWindow() {
     const { width, height } = screen.getPrimaryDisplay().workAreaSize;
 
     mainWindow = new BrowserWindow({
-        width: Math.floor(width * 0.75),
-        height: Math.floor(height * 0.75),
+        width: Math.floor(width * 0.80),
+        height: Math.floor(height * 0.86),
         resizable: false, // Prevent resizing
         maximizable: false,
         movable: false, // Prevent moving

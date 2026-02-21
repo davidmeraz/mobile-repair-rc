@@ -13,7 +13,7 @@ import {
 } from 'lucide-react';
 import Modal from '../components/Modal';
 
-const Inventory = ({ searchQuery = '', parts, setParts, repairs = [] }) => {
+const Inventory = ({ searchQuery = '', parts, setParts, repairs = [], setRepairs }) => {
     const [localSearch, setLocalSearch] = useState('');
     const [activeTab, setActiveTab] = useState('available');
     const [showModal, setShowModal] = useState(false);
@@ -138,6 +138,14 @@ const Inventory = ({ searchQuery = '', parts, setParts, repairs = [] }) => {
         const repair = repairs.find(r => String(r.id) === String(useRepairId));
         const now = new Date();
         const dateStr = now.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+
+        if (repair) {
+            setRepairs(prev => prev.map(r =>
+                r.id === repair.id
+                    ? { ...r, usedPartsIds: [...(r.usedPartsIds || []), partToUse.id] }
+                    : r
+            ));
+        }
 
         setParts(prev => prev.map(p =>
             p.id === partToUse.id

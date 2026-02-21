@@ -6,11 +6,12 @@ import {
     Clock,
     AlertTriangle,
     Edit3,
-    Trash2
+    Trash2,
+    Package
 } from 'lucide-react';
 import Modal from '../components/Modal';
 
-const Repairs = ({ searchQuery = '', deviceModels = [], customers = [], repairs, setRepairs }) => {
+const Repairs = ({ searchQuery = '', deviceModels = [], customers = [], repairs, setRepairs, parts = [], setParts }) => {
     const [filter, setFilter] = useState('All');
     const [showModal, setShowModal] = useState(false);
     const [editRepair, setEditRepair] = useState(null);
@@ -18,7 +19,16 @@ const Repairs = ({ searchQuery = '', deviceModels = [], customers = [], repairs,
     const [toast, setToast] = useState(null);
     const dropdownRef = useRef(null);
 
-    const [form, setForm] = useState({ customer: '', device: '', problem: '', status: 'Pending', cost: '' });
+    const initialForm = {
+        customer: '',
+        device: '',
+        problem: '',
+        status: 'Pending',
+        cost: '',
+        selectedParts: []
+    };
+
+    const [form, setForm] = useState(initialForm);
 
     // Close dropdown on outside click
     useEffect(() => {
@@ -76,12 +86,13 @@ const Repairs = ({ searchQuery = '', deviceModels = [], customers = [], repairs,
 
     const nextId = () => {
         const nums = repairs.map(r => parseInt(r.id.replace('#R-', '')));
+        if (nums.length === 0) return '#R-1001';
         return `#R-${Math.max(...nums) + 1}`;
     };
 
     const openAddModal = () => {
         setEditRepair(null);
-        setForm({ customer: '', device: '', problem: '', status: 'Pending', cost: '' });
+        setForm(initialForm);
         setShowModal(true);
     };
 
@@ -92,34 +103,85 @@ const Repairs = ({ searchQuery = '', deviceModels = [], customers = [], repairs,
             device: repair.device,
             problem: repair.problem,
             status: repair.status,
-            cost: repair.cost.replace('$', '')
+            cost: repair.cost.replace('$', ''),
+            selectedParts: repair.usedPartsIds || []
         });
         setShowModal(true);
         setOpenDropdown(null);
+    };
+
+    const togglePart = (partId) => {
+        setForm(prev => {
+            const isSelected = prev.selectedParts.includes(partId);
+            return {
+                ...prev,
+                selectedParts: isSelected
+                    ? prev.selectedParts.filter(id => id !== partId)
+                    : [...prev.selectedParts, partId]
+            };
+        });
     };
 
     const handleSubmit = (e) => {
         e.preventDefault();
         if (!form.customer || !form.device || !form.problem || !form.cost) return;
 
+        const dateStr = new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+        const repairId = editRepair ? editRepair.id : nextId();
+
+        // 1. Update Parts Status (Link/Unlink)
+        setParts(prev => prev.map(p => {
+            // If the part is currently selected for this repair
+            if (form.selectedParts.includes(p.id)) {
+                return {
+                    ...p,
+                    used: true,
+                    usedDate: dateStr,
+                    usedForRepairId: repairId,
+                    usedForCustomer: form.customer,
+                    usedForDevice: form.device
+                };
+            }
+            // If the part was previously in this repair but has been de-selected
+            if (editRepair && editRepair.usedPartsIds?.includes(p.id)) {
+                return {
+                    ...p,
+                    used: false,
+                    usedDate: null,
+                    usedForRepairId: null,
+                    usedForCustomer: null,
+                    usedForDevice: null
+                };
+            }
+            return p;
+        }));
+
+        // 2. Add/Update Repair
         if (editRepair) {
             setRepairs(prev => prev.map(r =>
                 r.id === editRepair.id
-                    ? { ...r, customer: form.customer, device: form.device, problem: form.problem, status: form.status, cost: `$${form.cost}` }
+                    ? {
+                        ...r,
+                        customer: form.customer,
+                        device: form.device,
+                        problem: form.problem,
+                        status: form.status,
+                        cost: `$${form.cost}`,
+                        usedPartsIds: form.selectedParts
+                    }
                     : r
             ));
             showToast('Repair updated successfully');
         } else {
-            const now = new Date();
-            const dateStr = now.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
             const newRepair = {
-                id: nextId(),
+                id: repairId,
                 customer: form.customer,
                 device: form.device,
                 problem: form.problem,
                 status: form.status,
                 date: dateStr,
-                cost: `$${form.cost}`
+                cost: `$${form.cost}`,
+                usedPartsIds: form.selectedParts
             };
             setRepairs(prev => [newRepair, ...prev]);
             showToast('New repair added successfully');
@@ -128,10 +190,28 @@ const Repairs = ({ searchQuery = '', deviceModels = [], customers = [], repairs,
     };
 
     const handleDelete = (id) => {
+        const repair = repairs.find(r => r.id === id);
+        if (repair && repair.usedPartsIds?.length > 0) {
+            setParts(prev => prev.map(p => {
+                if (repair.usedPartsIds.includes(p.id)) {
+                    return {
+                        ...p,
+                        used: false,
+                        usedDate: null,
+                        usedForRepairId: null,
+                        usedForCustomer: null,
+                        usedForDevice: null
+                    };
+                }
+                return p;
+            }));
+        }
         setRepairs(prev => prev.filter(r => r.id !== id));
         setOpenDropdown(null);
         showToast('Repair deleted');
     };
+
+    const availableParts = parts.filter(p => !p.used || (editRepair && editRepair.usedPartsIds?.includes(p.id)));
 
     return (
         <div className="repairs-view">
@@ -178,7 +258,14 @@ const Repairs = ({ searchQuery = '', deviceModels = [], customers = [], repairs,
                         ) : (
                             filteredRepairs.map((repair) => (
                                 <tr key={repair.id}>
-                                    <td style={{ fontFamily: 'monospace', color: 'var(--accent)' }}>{repair.id}</td>
+                                    <td style={{ fontFamily: 'monospace', color: 'var(--accent)' }}>
+                                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                                            {repair.id}
+                                            {repair.usedPartsIds?.length > 0 && (
+                                                <Package size={12} title={`${repair.usedPartsIds.length} parts used`} />
+                                            )}
+                                        </div>
+                                    </td>
                                     <td>{repair.customer}</td>
                                     <td>{repair.device}</td>
                                     <td>{repair.problem}</td>
@@ -216,7 +303,7 @@ const Repairs = ({ searchQuery = '', deviceModels = [], customers = [], repairs,
                 </table>
             </div>
 
-            <Modal isOpen={showModal} onClose={() => setShowModal(false)} title={editRepair ? 'Edit Repair' : 'New Repair'}>
+            <Modal isOpen={showModal} onClose={() => setShowModal(false)} title={editRepair ? 'Edit Repair' : 'New Repair'} width={500}>
                 <form onSubmit={handleSubmit}>
                     <div className="form-group">
                         <label>Customer</label>
@@ -276,6 +363,54 @@ const Repairs = ({ searchQuery = '', deviceModels = [], customers = [], repairs,
                         <label>Problem</label>
                         <input className="form-input" placeholder="e.g. Cracked Screen" value={form.problem} onChange={(e) => setForm({ ...form, problem: e.target.value })} required />
                     </div>
+
+                    {/* Integrated Parts Tracker */}
+                    <div className="form-group">
+                        <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                            <Package size={14} /> Link Parts from Inventory
+                        </label>
+                        <div style={{
+                            maxHeight: '120px',
+                            overflowY: 'auto',
+                            background: 'rgba(0,0,0,0.1)',
+                            borderRadius: '8px',
+                            padding: '0.5rem',
+                            border: '1px solid var(--border)'
+                        }}>
+                            {availableParts.length === 0 ? (
+                                <div style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', padding: '0.5rem' }}>
+                                    No available parts in inventory.
+                                </div>
+                            ) : (
+                                availableParts.map(part => (
+                                    <label key={part.id} style={{
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        gap: '0.75rem',
+                                        padding: '0.35rem 0.5rem',
+                                        borderRadius: '4px',
+                                        cursor: 'pointer',
+                                        fontSize: '0.85rem',
+                                        transition: 'background 0.2s'
+                                    }} className="part-selection-item">
+                                        <input
+                                            type="checkbox"
+                                            checked={form.selectedParts.includes(part.id)}
+                                            onChange={() => togglePart(part.id)}
+                                            style={{ cursor: 'pointer' }}
+                                        />
+                                        <div style={{ flex: 1 }}>
+                                            <div style={{ fontWeight: 500 }}>{part.name}</div>
+                                            <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>
+                                                {part.supplier} • ${part.cost}
+                                            </div>
+                                        </div>
+                                    </label>
+                                ))
+                            )}
+                        </div>
+                    </div>
+
                     <div className="form-group">
                         <label>Status</label>
                         <select className="form-select" value={form.status} onChange={(e) => setForm({ ...form, status: e.target.value })}>
