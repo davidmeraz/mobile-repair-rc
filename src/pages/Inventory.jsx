@@ -13,7 +13,7 @@ import {
 } from 'lucide-react';
 import Modal from '../components/Modal';
 
-const Inventory = ({ searchQuery = '', parts, setParts, repairs = [], setRepairs }) => {
+const Inventory = ({ searchQuery = '', parts, setParts, repairs = [], setRepairs, customers = [] }) => {
     const [localSearch, setLocalSearch] = useState('');
     const [activeTab, setActiveTab] = useState('available');
     const [showModal, setShowModal] = useState(false);
@@ -26,18 +26,20 @@ const Inventory = ({ searchQuery = '', parts, setParts, repairs = [], setRepairs
 
     const [form, setForm] = useState({
         name: '',
-        supplier: '',
         cost: '',
         datePurchased: new Date().toISOString().slice(0, 10),
-        notes: ''
+        notes: '',
+        assignedCustomer: '',
+        paymentStatus: 'Shop Paid'
     });
 
     const emptyForm = {
         name: '',
-        supplier: '',
         cost: '',
         datePurchased: new Date().toISOString().slice(0, 10),
-        notes: ''
+        notes: '',
+        assignedCustomer: '',
+        paymentStatus: 'Shop Paid'
     };
 
     useEffect(() => {
@@ -61,7 +63,7 @@ const Inventory = ({ searchQuery = '', parts, setParts, repairs = [], setRepairs
     const filteredParts = (activeTab === 'available' ? availableParts : usedParts).filter(p => {
         if (!combinedSearch) return true;
         return p.name.toLowerCase().includes(combinedSearch) ||
-            (p.supplier || '').toLowerCase().includes(combinedSearch) ||
+            (p.assignedCustomer || '').toLowerCase().includes(combinedSearch) ||
             (p.usedForCustomer || '').toLowerCase().includes(combinedSearch);
     });
 
@@ -78,10 +80,11 @@ const Inventory = ({ searchQuery = '', parts, setParts, repairs = [], setRepairs
         setEditPart(part);
         setForm({
             name: part.name,
-            supplier: part.supplier || '',
             cost: part.cost,
             datePurchased: part.datePurchased || '',
-            notes: part.notes || ''
+            notes: part.notes || '',
+            assignedCustomer: part.assignedCustomer || '',
+            paymentStatus: part.paymentStatus || 'Shop Paid'
         });
         setShowModal(true);
         setOpenDropdown(null);
@@ -94,7 +97,7 @@ const Inventory = ({ searchQuery = '', parts, setParts, repairs = [], setRepairs
         if (editPart) {
             setParts(prev => prev.map(p =>
                 p.id === editPart.id
-                    ? { ...p, name: form.name, supplier: form.supplier, cost: form.cost, datePurchased: form.datePurchased, notes: form.notes }
+                    ? { ...p, name: form.name, cost: form.cost, datePurchased: form.datePurchased, notes: form.notes, assignedCustomer: form.assignedCustomer, paymentStatus: form.paymentStatus }
                     : p
             ));
             setToast('Part updated successfully');
@@ -102,10 +105,11 @@ const Inventory = ({ searchQuery = '', parts, setParts, repairs = [], setRepairs
             const newPart = {
                 id: Date.now(),
                 name: form.name,
-                supplier: form.supplier,
                 cost: form.cost,
                 datePurchased: form.datePurchased,
                 notes: form.notes,
+                assignedCustomer: form.assignedCustomer,
+                paymentStatus: form.paymentStatus,
                 used: false,
                 usedDate: null,
                 usedForRepairId: null,
@@ -174,49 +178,92 @@ const Inventory = ({ searchQuery = '', parts, setParts, repairs = [], setRepairs
     };
 
     return (
-        <div className="repairs-view">
-            <div className="repairs-header">
-                <div className="search-bar" style={{ width: '300px' }}>
-                    <Search size={18} style={{ color: 'var(--text-secondary)' }} />
-                    <input
-                        type="text"
-                        value={localSearch}
-                        onChange={e => setLocalSearch(e.target.value)}
-                    />
+        <div className="repairs-view" style={{ overflowY: 'auto', paddingBottom: '2rem' }}>
+            <style>
+                {`
+                .anim-header {
+                    animation: fadeDown 0.6s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+                }
+                
+                .anim-card {
+                    opacity: 0;
+                    transform: translateY(20px);
+                    animation: popUp 0.6s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+                    transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 0.3s;
+                    border: 1px solid rgba(255, 255, 255, 0.05);
+                }
+                
+                .anim-card:hover {
+                    transform: translateY(-5px);
+                    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+                    border-color: rgba(255,255,255,0.1);
+                }
+
+                @keyframes fadeDown {
+                    from { opacity: 0; transform: translateY(-15px); }
+                    to { opacity: 1; transform: translateY(0); }
+                }
+
+                @keyframes popUp {
+                    to { opacity: 1; transform: translateY(0); }
+                }
+                `}
+            </style>
+
+            <div className="repairs-header anim-header" style={{ marginBottom: '2.5rem', background: 'transparent' }}>
+                <div style={{ display: 'flex', gap: '1rem', flex: 1 }}>
+                    <h2 style={{ fontSize: '1.8rem', fontWeight: 700, margin: 0, letterSpacing: '-0.02em', display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                        <Package size={28} style={{ color: '#8b5cf6' }} />
+                        Stock Management
+                    </h2>
                 </div>
-                <button className="btn-primary" onClick={openAdd}>
-                    <Plus size={18} />
-                    <span>Add Part</span>
-                </button>
+
+                <div style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
+                    <div className="search-bar" style={{ width: '280px', margin: 0 }}>
+                        <Search size={18} style={{ color: 'var(--text-secondary)' }} />
+                        <input
+                            type="text"
+                            value={localSearch}
+                            onChange={e => setLocalSearch(e.target.value)}
+                            placeholder="Search parts by name or supplier..."
+                        />
+                    </div>
+                    <button className="btn-primary" onClick={openAdd} style={{ padding: '0.65rem 1.25rem', display: 'flex', alignItems: 'center', gap: '0.75rem', borderRadius: '12px' }}>
+                        <Plus size={18} />
+                        <span style={{ fontWeight: 600 }}>Add Part</span>
+                    </button>
+                </div>
             </div>
 
             {/* Summary cards */}
-            <div className="metrics-grid" style={{ marginBottom: '1.5rem' }}>
-                <div className="metric-card" style={{ padding: '1rem', flexDirection: 'row', alignItems: 'center', gap: '1rem' }}>
-                    <div style={{ padding: '0.75rem', background: 'rgba(56, 189, 248, 0.1)', borderRadius: '8px', color: 'var(--accent)' }}>
-                        <ShoppingCart size={24} />
+            <div className="metrics-grid" style={{ marginBottom: '2.5rem', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '1.25rem' }}>
+                <div className="metric-card anim-card" style={{ animationDelay: '0.1s', padding: '1.25rem', flexDirection: 'row', alignItems: 'center', gap: '1.25rem', background: 'linear-gradient(145deg, rgba(30,41,59,0.7) 0%, rgba(15,23,42,0.9) 100%)' }}>
+                    <div style={{ padding: '1rem', background: 'linear-gradient(135deg, rgba(56, 189, 248, 0.2), rgba(56, 189, 248, 0.05))', borderRadius: '12px', color: '#38bdf8', boxShadow: 'inset 0 0 0 1px rgba(56, 189, 248, 0.2)' }}>
+                        <ShoppingCart size={28} />
                     </div>
                     <div>
-                        <div style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>Available Parts</div>
-                        <div style={{ fontSize: '1.25rem', fontWeight: 700 }}>{availableParts.length}</div>
+                        <div style={{ fontSize: '0.85rem', color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '0.25rem' }}>Available Parts</div>
+                        <div style={{ fontSize: '1.5rem', fontWeight: 700, color: '#f8fafc' }}>{availableParts.length}</div>
                     </div>
                 </div>
-                <div className="metric-card" style={{ padding: '1rem', flexDirection: 'row', alignItems: 'center', gap: '1rem' }}>
-                    <div style={{ padding: '0.75rem', background: 'rgba(16, 185, 129, 0.1)', borderRadius: '8px', color: '#10b981' }}>
-                        <CheckCircle size={24} />
+
+                <div className="metric-card anim-card" style={{ animationDelay: '0.15s', padding: '1.25rem', flexDirection: 'row', alignItems: 'center', gap: '1.25rem', background: 'linear-gradient(145deg, rgba(30,41,59,0.7) 0%, rgba(15,23,42,0.9) 100%)' }}>
+                    <div style={{ padding: '1rem', background: 'linear-gradient(135deg, rgba(16, 185, 129, 0.2), rgba(16, 185, 129, 0.05))', borderRadius: '12px', color: '#10b981', boxShadow: 'inset 0 0 0 1px rgba(16, 185, 129, 0.2)' }}>
+                        <CheckCircle size={28} />
                     </div>
                     <div>
-                        <div style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>Parts Used</div>
-                        <div style={{ fontSize: '1.25rem', fontWeight: 700 }}>{totalUsed}</div>
+                        <div style={{ fontSize: '0.85rem', color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '0.25rem' }}>Parts Used</div>
+                        <div style={{ fontSize: '1.5rem', fontWeight: 700, color: '#f8fafc' }}>{totalUsed}</div>
                     </div>
                 </div>
-                <div className="metric-card" style={{ padding: '1rem', flexDirection: 'row', alignItems: 'center', gap: '1rem' }}>
-                    <div style={{ padding: '0.75rem', background: 'rgba(239, 68, 68, 0.1)', borderRadius: '8px', color: '#ef4444' }}>
-                        <DollarSign size={24} />
+
+                <div className="metric-card anim-card" style={{ animationDelay: '0.2s', padding: '1.25rem', flexDirection: 'row', alignItems: 'center', gap: '1.25rem', background: 'linear-gradient(145deg, rgba(30,41,59,0.7) 0%, rgba(15,23,42,0.9) 100%)' }}>
+                    <div style={{ padding: '1rem', background: 'linear-gradient(135deg, rgba(239, 68, 68, 0.2), rgba(239, 68, 68, 0.05))', borderRadius: '12px', color: '#ef4444', boxShadow: 'inset 0 0 0 1px rgba(239, 68, 68, 0.2)' }}>
+                        <DollarSign size={28} />
                     </div>
                     <div>
-                        <div style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>Total Spent</div>
-                        <div style={{ fontSize: '1.25rem', fontWeight: 700 }}>${totalSpent.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</div>
+                        <div style={{ fontSize: '0.85rem', color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '0.25rem' }}>Total Spent</div>
+                        <div style={{ fontSize: '1.5rem', fontWeight: 700, color: '#f8fafc' }}>${totalSpent.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</div>
                     </div>
                 </div>
             </div>
@@ -226,14 +273,14 @@ const Inventory = ({ searchQuery = '', parts, setParts, repairs = [], setRepairs
                 <button
                     className={`filter-tab ${activeTab === 'available' ? 'active' : ''}`}
                     onClick={() => setActiveTab('available')}
-                    style={{ flex: 1, padding: '0.5rem 1rem', borderRadius: '8px', border: 'none', background: activeTab === 'available' ? 'rgba(56, 189, 248, 0.1)' : 'transparent', color: activeTab === 'available' ? 'var(--accent)' : 'var(--text-secondary)', display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer', transition: 'all 0.2s', fontWeight: activeTab === 'available' ? 600 : 500 }}
+                    style={{ flex: 1, padding: '0.5rem 1rem', borderRadius: '8px', border: 'none', background: activeTab === 'available' ? 'rgba(56, 189, 248, 0.1)' : 'transparent', color: activeTab === 'available' ? 'var(--accent)' : 'var(--text-secondary)', display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer', transition: 'all 0.2s', fontWeight: activeTab === 'available' ? 600 : 500, whiteSpace: 'nowrap' }}
                 >
                     <ShoppingCart size={16} /> Available ({availableParts.length})
                 </button>
                 <button
                     className={`filter-tab ${activeTab === 'used' ? 'active' : ''}`}
                     onClick={() => setActiveTab('used')}
-                    style={{ flex: 1, padding: '0.5rem 1rem', borderRadius: '8px', border: 'none', background: activeTab === 'used' ? 'rgba(16, 185, 129, 0.1)' : 'transparent', color: activeTab === 'used' ? '#10b981' : 'var(--text-secondary)', display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer', transition: 'all 0.2s', fontWeight: activeTab === 'used' ? 600 : 500 }}
+                    style={{ flex: 1, padding: '0.5rem 1rem', borderRadius: '8px', border: 'none', background: activeTab === 'used' ? 'rgba(16, 185, 129, 0.1)' : 'transparent', color: activeTab === 'used' ? '#10b981' : 'var(--text-secondary)', display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer', transition: 'all 0.2s', fontWeight: activeTab === 'used' ? 600 : 500, whiteSpace: 'nowrap' }}
                 >
                     <Archive size={16} /> Used History ({usedParts.length})
                 </button>
@@ -245,10 +292,9 @@ const Inventory = ({ searchQuery = '', parts, setParts, repairs = [], setRepairs
                     <thead>
                         <tr>
                             <th>Part Name</th>
-                            <th>Supplier</th>
                             <th>Cost</th>
                             <th>{activeTab === 'available' ? 'Date Purchased' : 'Date Used'}</th>
-                            {activeTab === 'used' && <th>Used For</th>}
+                            <th>{activeTab === 'available' ? 'Assigned To' : 'Used For'}</th>
                             <th>Notes</th>
                             <th>Actions</th>
                         </tr>
@@ -256,7 +302,7 @@ const Inventory = ({ searchQuery = '', parts, setParts, repairs = [], setRepairs
                     <tbody>
                         {filteredParts.length === 0 ? (
                             <tr>
-                                <td colSpan={activeTab === 'used' ? 7 : 6} style={{ textAlign: 'center', padding: '4rem 2rem', color: 'var(--text-secondary)' }}>
+                                <td colSpan={6} style={{ textAlign: 'center', padding: '4rem 2rem', color: 'var(--text-secondary)' }}>
                                     <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.5rem' }}>
                                         {activeTab === 'available' ? <Package size={32} style={{ opacity: 0.5 }} /> : <Archive size={32} style={{ opacity: 0.5 }} />}
                                         <p style={{ marginTop: '0.5rem', fontSize: '1rem', fontWeight: 500 }}>
@@ -279,12 +325,6 @@ const Inventory = ({ searchQuery = '', parts, setParts, repairs = [], setRepairs
                                             <span style={{ fontWeight: 500 }}>{part.name}</span>
                                         </div>
                                     </td>
-                                    <td style={{ color: 'var(--text-secondary)', fontSize: '0.85rem' }}>
-                                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
-                                            <div style={{ width: 6, height: 6, borderRadius: '50%', background: part.supplier ? 'var(--accent)' : 'transparent' }} />
-                                            {part.supplier || 'Unknown Supplier'}
-                                        </div>
-                                    </td>
                                     <td>
                                         <span style={{
                                             background: activeTab === 'available' ? 'rgba(56, 189, 248, 0.1)' : 'rgba(16, 185, 129, 0.1)',
@@ -297,22 +337,23 @@ const Inventory = ({ searchQuery = '', parts, setParts, repairs = [], setRepairs
                                         }}>
                                             ${parseFloat(part.cost).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                                         </span>
+                                        <div style={{ marginTop: '0.35rem', fontSize: '0.75rem', color: part.paymentStatus === 'Customer Deposit' ? '#10b981' : 'var(--text-secondary)', fontWeight: part.paymentStatus === 'Customer Deposit' ? 600 : 400 }}>
+                                            {part.paymentStatus === 'Customer Deposit' ? 'Paid by Customer' : 'Shop Paid'}
+                                        </div>
                                     </td>
                                     <td style={{ color: 'var(--text-secondary)', fontSize: '0.85rem' }}>
                                         {activeTab === 'available' ? formatDate(part.datePurchased) : part.usedDate || '—'}
                                     </td>
-                                    {activeTab === 'used' && (
-                                        <td>
-                                            <div style={{ fontSize: '0.85rem', display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
-                                                {part.usedForCustomer ? (
-                                                    <span style={{ fontWeight: 500, color: 'var(--accent)', background: 'rgba(56, 189, 248, 0.1)', padding: '0.15rem 0.5rem', borderRadius: '4px', display: 'inline-block', width: 'fit-content' }}>
-                                                        {part.usedForCustomer}
-                                                    </span>
-                                                ) : <span style={{ color: 'var(--text-secondary)' }}>—</span>}
-                                                <div style={{ color: 'var(--text-secondary)', fontSize: '0.75rem', paddingLeft: '0.2rem' }}>{part.usedForDevice || ''}</div>
-                                            </div>
-                                        </td>
-                                    )}
+                                    <td>
+                                        <div style={{ fontSize: '0.85rem', display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
+                                            {(activeTab === 'used' ? part.usedForCustomer : part.assignedCustomer) ? (
+                                                <span style={{ fontWeight: 500, color: 'var(--accent)', background: 'rgba(56, 189, 248, 0.1)', padding: '0.15rem 0.5rem', borderRadius: '4px', display: 'inline-block', width: 'fit-content' }}>
+                                                    {activeTab === 'used' ? part.usedForCustomer : part.assignedCustomer}
+                                                </span>
+                                            ) : <span style={{ color: 'var(--text-secondary)' }}>—</span>}
+                                            {activeTab === 'used' && part.usedForDevice && <div style={{ color: 'var(--text-secondary)', fontSize: '0.75rem', paddingLeft: '0.2rem' }}>{part.usedForDevice}</div>}
+                                        </div>
+                                    </td>
                                     <td style={{ color: 'var(--text-secondary)', fontSize: '0.85rem', maxWidth: '160px' }}>{part.notes || '—'}</td>
                                     <td>
                                         <div className="action-wrapper" onClick={e => e.stopPropagation()}>
@@ -352,19 +393,31 @@ const Inventory = ({ searchQuery = '', parts, setParts, repairs = [], setRepairs
                         <label>Part Name</label>
                         <input className="form-input" value={form.name} onChange={e => setForm({ ...form, name: e.target.value })} required />
                     </div>
-                    <div className="form-row">
-                        <div className="form-group">
-                            <label>Supplier</label>
-                            <input className="form-input" value={form.supplier} onChange={e => setForm({ ...form, supplier: e.target.value })} />
-                        </div>
-                        <div className="form-group">
-                            <label>Cost ($)</label>
-                            <input className="form-input" type="number" step="0.01" min="0" value={form.cost} onChange={e => setForm({ ...form, cost: e.target.value })} required />
-                        </div>
+                    <div className="form-group">
+                        <label>Cost ($)</label>
+                        <input className="form-input" type="number" step="0.01" min="0" value={form.cost} onChange={e => setForm({ ...form, cost: e.target.value })} required />
                     </div>
                     <div className="form-group">
                         <label>Date Purchased</label>
                         <input className="form-input" type="date" value={form.datePurchased} onChange={e => setForm({ ...form, datePurchased: e.target.value })} />
+                    </div>
+                    <div className="form-row">
+                        <div className="form-group">
+                            <label>Assign to Customer (optional)</label>
+                            <select className="form-select" value={form.assignedCustomer} onChange={e => setForm({ ...form, assignedCustomer: e.target.value })}>
+                                <option value="">— Unassigned —</option>
+                                {customers.map(c => (
+                                    <option key={c.id} value={c.name}>{c.name}</option>
+                                ))}
+                            </select>
+                        </div>
+                        <div className="form-group">
+                            <label>Payment Source</label>
+                            <select className="form-select" value={form.paymentStatus} onChange={e => setForm({ ...form, paymentStatus: e.target.value })}>
+                                <option value="Shop Paid">Paid by Shop</option>
+                                <option value="Customer Deposit">Customer Paid / Deposit (Anticipo)</option>
+                            </select>
+                        </div>
                     </div>
                     <div className="form-group">
                         <label>Notes (optional)</label>
