@@ -11,7 +11,7 @@ import {
 } from 'lucide-react';
 import Modal from '../components/Modal';
 
-const Repairs = ({ searchQuery = '', deviceModels = [], customers = [], repairs, setRepairs, parts = [], setParts }) => {
+const Repairs = ({ searchQuery = '', deviceModels = [], setDeviceModels, customers = [], setCustomers, repairs, setRepairs, parts = [], setParts }) => {
     const [filter, setFilter] = useState('All');
     const [showModal, setShowModal] = useState(false);
     const [editRepair, setEditRepair] = useState(null);
@@ -141,6 +141,40 @@ const Repairs = ({ searchQuery = '', deviceModels = [], customers = [], repairs,
         const fallbackDateStr = `${d}/${m}/${y}`;
         const finalDate = form.date || fallbackDateStr;
         const repairId = editRepair ? editRepair.id : nextId();
+
+        // Reactive addition of customer if not exists
+        if (setCustomers && form.customer) {
+            const customerExists = customers.find(c => c.name.toLowerCase() === form.customer.toLowerCase());
+            if (!customerExists) {
+                const newCustomerId = customers.length > 0 ? Math.max(...customers.map(c => c.id)) + 1 : 1;
+                setCustomers(prev => [{
+                    id: newCustomerId,
+                    name: form.customer,
+                    phone: '',
+                    email: ''
+                }, ...prev]);
+            }
+        }
+
+        // Reactive addition of device if not exists
+        if (setDeviceModels && form.device) {
+            const deviceExists = deviceModels.find(d => {
+                const fullName = `${d.brand} ${d.model}`.toLowerCase();
+                return fullName === form.device.toLowerCase() || d.model.toLowerCase() === form.device.toLowerCase();
+            });
+            if (!deviceExists) {
+                const newModelId = Date.now();
+                setDeviceModels(prev => [{
+                    id: newModelId,
+                    brand: 'Other',
+                    model: form.device,
+                    modelNumber: '',
+                    year: new Date().getFullYear(),
+                    screen: '',
+                    repairDifficulty: 'Medium'
+                }, ...prev]);
+            }
+        }
 
         // 1. Update Parts Status (Link/Unlink)
         setParts(prev => prev.map(p => {
@@ -338,7 +372,7 @@ const Repairs = ({ searchQuery = '', deviceModels = [], customers = [], repairs,
                                 ))}
                             </select>
                         ) : (
-                            <input className="form-input" placeholder="e.g. John Doe" value={form.customer} onChange={(e) => setForm({ ...form, customer: e.target.value })} required />
+                            <input className="form-input" value={form.customer} onChange={(e) => setForm({ ...form, customer: e.target.value })} required />
                         )}
                     </div>
                     <div className="form-row">
@@ -369,27 +403,17 @@ const Repairs = ({ searchQuery = '', deviceModels = [], customers = [], repairs,
                                     ))}
                                 </select>
                             ) : (
-                                <input className="form-input" placeholder="e.g. iPhone 14 Pro" value={form.device} onChange={(e) => setForm({ ...form, device: e.target.value })} required />
+                                <input className="form-input" value={form.device} onChange={(e) => setForm({ ...form, device: e.target.value })} required />
                             )}
                         </div>
-                        <div className="form-group" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '1rem' }}>
-                            <div>
-                                <label>Date</label>
-                                <input className="form-input" type="text" placeholder="e.g. 05/12/2026" value={form.date} onChange={(e) => setForm({ ...form, date: e.target.value })} required />
-                            </div>
-                            <div>
-                                <label>Hours</label>
-                                <input className="form-input" type="text" placeholder="e.g. 10:06:48 AM" value={form.hours} onChange={(e) => setForm({ ...form, hours: e.target.value })} />
-                            </div>
-                            <div>
-                                <label>Cost ($)</label>
-                                <input className="form-input" type="number" placeholder="e.g. 120" value={form.cost} onChange={(e) => setForm({ ...form, cost: e.target.value })} required />
-                            </div>
+                        <div className="form-group">
+                            <label>Cost ($)</label>
+                            <input className="form-input" type="number" value={form.cost} onChange={(e) => setForm({ ...form, cost: e.target.value })} required />
                         </div>
                     </div>
                     <div className="form-group">
                         <label>Problem</label>
-                        <input className="form-input" placeholder="e.g. Cracked Screen" value={form.problem} onChange={(e) => setForm({ ...form, problem: e.target.value })} required />
+                        <input className="form-input" value={form.problem} onChange={(e) => setForm({ ...form, problem: e.target.value })} required />
                     </div>
 
                     {/* Integrated Parts Tracker */}

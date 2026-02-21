@@ -18,20 +18,30 @@ import {
 import MetricCard from '../components/MetricCard';
 import RecentActivity from '../components/RecentActivity';
 
-const Dashboard = ({ onNavigate, repairs = [], customers = [] }) => {
+const Dashboard = ({ onNavigate, repairs = [], customers = [], parts = [] }) => {
     const [chartMode, setChartMode] = useState('Revenue'); // 'Revenue' | 'Repairs' | 'Profit'
 
     const totalRevenue = useMemo(() => {
-        return repairs.reduce((sum, r) => sum + parseFloat((r.cost || '$0').replace('$', '')), 0);
+        return repairs.filter(r => r.status === 'Completed').reduce((sum, r) => sum + parseFloat((r.cost || '$0').replace('$', '')), 0);
     }, [repairs]);
 
     const totalProfit = useMemo(() => {
-        return repairs.reduce((sum, r) => {
-            const revenue = parseFloat((r.cost || '$0').replace('$', ''));
-            const parts = parseFloat((r.partsCost || '$0').replace('$', ''));
-            return sum + (revenue - parts);
+        return repairs.filter(r => r.status === 'Completed').reduce((sum, r) => {
+            const revenue = parseFloat(String(r.cost || '$0').replace('$', ''));
+
+            // Calculate parts cost from linked inventory
+            let partsCostNum = 0;
+            if (r.usedPartsIds && r.usedPartsIds.length > 0) {
+                const linkedParts = parts.filter(p => r.usedPartsIds.includes(p.id));
+                partsCostNum = linkedParts.reduce((pSum, p) => pSum + parseFloat(p.cost || 0), 0);
+            } else if (r.partsCost) {
+                // Fallback for mock data or manual override
+                partsCostNum = parseFloat(String(r.partsCost).replace('$', ''));
+            }
+
+            return sum + (revenue - partsCostNum);
         }, 0);
-    }, [repairs]);
+    }, [repairs, parts]);
 
     const activeRepairs = useMemo(() => {
         return repairs.filter(r => r.status !== 'Completed').length;
@@ -41,11 +51,12 @@ const Dashboard = ({ onNavigate, repairs = [], customers = [] }) => {
         return repairs.filter(r => r.status === 'Completed').length;
     }, [repairs]);
 
-    // Build chart data from real repairs grouped by date
+    // Build chart data from real completed repairs grouped by date
     const chartData = useMemo(() => {
-        if (repairs.length === 0) return [];
+        const completed = repairs.filter(r => r.status === 'Completed');
+        if (completed.length === 0) return [];
         const byDate = {};
-        repairs.forEach(r => {
+        completed.forEach(r => {
             const key = r.date || 'Unknown';
             if (!byDate[key]) byDate[key] = {
                 name: key,
@@ -55,11 +66,19 @@ const Dashboard = ({ onNavigate, repairs = [], customers = [] }) => {
                 repairs: 0,
                 rawDate: new Date(key)
             };
-            const rev = parseFloat((r.cost || '$0').replace('$', ''));
-            const part = parseFloat((r.partsCost || '$0').replace('$', ''));
+            const rev = parseFloat(String(r.cost || '$0').replace('$', ''));
+
+            // Calculate parts cost from linked inventory
+            let partsCostNum = 0;
+            if (r.usedPartsIds && r.usedPartsIds.length > 0) {
+                const linkedParts = parts.filter(p => r.usedPartsIds.includes(p.id));
+                partsCostNum = linkedParts.reduce((pSum, p) => pSum + parseFloat(p.cost || 0), 0);
+            } else if (r.partsCost) {
+                partsCostNum = parseFloat(String(r.partsCost).replace('$', ''));
+            }
 
             byDate[key].revenue += rev;
-            byDate[key].profit += (rev - part);
+            byDate[key].profit += (rev - partsCostNum);
             byDate[key].repairs += 1;
         });
 

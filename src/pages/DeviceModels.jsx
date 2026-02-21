@@ -108,7 +108,6 @@ const DeviceModels = ({ searchQuery = '', models, setModels }) => {
                     <Search size={18} style={{ color: 'var(--text-secondary)' }} />
                     <input
                         type="text"
-                        placeholder="Search models or brand..."
                         value={localSearch}
                         onChange={(e) => setLocalSearch(e.target.value)}
                     />
@@ -262,16 +261,16 @@ const DeviceModels = ({ searchQuery = '', models, setModels }) => {
                     </div>
                     <div className="form-group">
                         <label>Model Name</label>
-                        <input className="form-input" placeholder="e.g. iPhone 15 Pro" value={form.model} onChange={e => setForm({ ...form, model: e.target.value })} required />
+                        <input className="form-input" value={form.model} onChange={e => setForm({ ...form, model: e.target.value })} required />
                     </div>
                     <div className="form-group">
                         <label>Model Number</label>
-                        <input className="form-input" placeholder="e.g. A2848, SM-S928B" value={form.modelNumber} onChange={e => setForm({ ...form, modelNumber: e.target.value })} />
+                        <input className="form-input" value={form.modelNumber} onChange={e => setForm({ ...form, modelNumber: e.target.value })} />
                     </div>
                     <div className="form-row">
                         <div className="form-group">
                             <label>Screen Size</label>
-                            <input className="form-input" placeholder='e.g. 6.1"' value={form.screen} onChange={e => setForm({ ...form, screen: e.target.value })} required />
+                            <input className="form-input" value={form.screen} onChange={e => setForm({ ...form, screen: e.target.value })} required />
                         </div>
                         <div className="form-group">
                             <label>Repair Difficulty</label>

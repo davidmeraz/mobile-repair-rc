@@ -126,7 +126,6 @@ const Customers = ({ searchQuery = '', customers, setCustomers, repairs = [] }) 
                     <Search size={18} style={{ color: 'var(--text-secondary)' }} />
                     <input
                         type="text"
-                        placeholder="Search customers..."
                         value={localSearch}
                         onChange={(e) => setLocalSearch(e.target.value)}
                     />
@@ -234,15 +233,15 @@ const Customers = ({ searchQuery = '', customers, setCustomers, repairs = [] }) 
                 <form onSubmit={handleSubmit}>
                     <div className="form-group">
                         <label>Full Name</label>
-                        <input className="form-input" placeholder="e.g. John Doe" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} required />
+                        <input className="form-input" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} required />
                     </div>
                     <div className="form-group">
                         <label>Email</label>
-                        <input className="form-input" type="email" placeholder="e.g. john@example.com" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} required />
+                        <input className="form-input" type="email" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} required />
                     </div>
                     <div className="form-group">
                         <label>Phone</label>
-                        <input className="form-input" placeholder="e.g. (555) 123-4567" value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} required />
+                        <input className="form-input" value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} required />
                     </div>
                     <div className="form-actions">
                         <button type="button" className="btn-secondary" onClick={() => setShowAddModal(false)}>Cancel</button>

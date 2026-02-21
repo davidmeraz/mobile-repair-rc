@@ -13,7 +13,6 @@ const Header = ({ title, searchQuery, onSearchChange }) => {
                     <Search size={18} style={{ color: 'var(--text-secondary)' }} />
                     <input
                         type="text"
-                        placeholder="Search repairs, customers..."
                         value={searchQuery || ''}
                         onChange={(e) => onSearchChange?.(e.target.value)}
                     />

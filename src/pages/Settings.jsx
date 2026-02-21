@@ -1,31 +1,44 @@
 import React, { useState, useEffect } from 'react';
 import {
     User,
-    Bell,
-    Moon,
-    Sun,
-    Shield,
-    Monitor,
+    Store,
+    DollarSign,
+    Database,
     LogOut,
-    ChevronRight,
-    ToggleLeft,
-    ToggleRight,
     CheckCircle,
-    Lock,
-    AlertTriangle
+    Save,
+    Trash2,
+    Download,
+    Cpu,
+    ShieldAlert
 } from 'lucide-react';
 import Modal from '../components/Modal';
 
 const Settings = ({ onNavigate }) => {
-    const [notifications, setNotifications] = useState(true);
-    const [darkMode, setDarkMode] = useState(!document.documentElement.classList.contains('light-mode'));
-    const [showProfileModal, setShowProfileModal] = useState(false);
-    const [showSecurityModal, setShowSecurityModal] = useState(false);
-    const [showSignOutConfirm, setShowSignOutConfirm] = useState(false);
+    const [activeMenu, setActiveMenu] = useState('account');
     const [toast, setToast] = useState(null);
+    const [showSignOutConfirm, setShowSignOutConfirm] = useState(false);
+    const [isAnimating, setIsAnimating] = useState(false);
+    const [renderedMenu, setRenderedMenu] = useState('account');
 
-    const [profile, setProfile] = useState({ name: 'John Doe', email: 'john.doe@repairrc.com', role: 'Administrator' });
-    const [editProfile, setEditProfile] = useState({ ...profile });
+    // Mocks
+    const [shopConfig, setShopConfig] = useState({
+        name: 'Mobile Repair RC',
+        address: '123 Tech Ave, Suite 4B',
+        phone: '(555) 019-2834',
+        email: 'hello@repairrc.com'
+    });
+
+    const [finConfig, setFinConfig] = useState({
+        currency: '$',
+        taxRate: '8.5'
+    });
+
+    const [userConfig, setUserConfig] = useState({
+        name: 'David Meraz',
+        role: 'Administrator',
+        pin: '1234'
+    });
 
     useEffect(() => {
         if (toast) {
@@ -34,210 +47,650 @@ const Settings = ({ onNavigate }) => {
         }
     }, [toast]);
 
-    const handleDarkModeToggle = () => {
-        const newMode = !darkMode;
-        setDarkMode(newMode);
-        if (newMode) {
-            document.documentElement.classList.remove('light-mode');
-        } else {
-            document.documentElement.classList.add('light-mode');
-        }
-        setToast(newMode ? 'Dark mode enabled' : 'Light mode enabled');
-    };
-
-    const handleNotificationsToggle = () => {
-        const newState = !notifications;
-        setNotifications(newState);
-        setToast(newState ? 'Notifications enabled' : 'Notifications disabled');
-    };
-
-    const handleSaveProfile = (e) => {
-        e.preventDefault();
-        setProfile({ ...editProfile });
-        setShowProfileModal(false);
-        setToast('Profile updated successfully');
-    };
+    const showMessage = (msg) => setToast(msg);
 
     const handleSignOut = () => {
         setShowSignOutConfirm(false);
-        setToast('Signed out successfully');
+        showMessage('System locked successfully');
         setTimeout(() => {
             onNavigate?.('Dashboard');
         }, 1000);
     };
 
-    const sections = [
-        {
-            title: 'Account Settings',
-            items: [
-                { icon: User, label: 'Profile Information', sub: 'Update your photo and details', action: () => { setEditProfile({ ...profile }); setShowProfileModal(true); } },
-                { icon: Shield, label: 'Security', sub: 'Password, 2FA', action: () => setShowSecurityModal(true) },
-            ]
-        },
-        {
-            title: 'App Preferences',
-            items: [
-                { icon: Bell, label: 'Notifications', sub: 'Manage alerts and emails', toggle: true, state: notifications, onToggle: handleNotificationsToggle },
-                { icon: darkMode ? Moon : Sun, label: 'Dark Mode', sub: darkMode ? 'Currently using dark theme' : 'Currently using light theme', toggle: true, state: darkMode, onToggle: handleDarkModeToggle },
-                { icon: Monitor, label: 'System', sub: 'Display and resolution settings' },
-            ]
-        }
+    const handleTabChange = (newMenu) => {
+        if (newMenu === activeMenu) return;
+        setIsAnimating(true);
+        setActiveMenu(newMenu);
+        setTimeout(() => {
+            setRenderedMenu(newMenu);
+            setIsAnimating(false);
+        }, 300); // match exit transition time
+    };
+
+    const menus = [
+        { id: 'account', label: 'Profile Info', icon: User, gradient: 'linear-gradient(135deg, #f43f5e, #fb7185)' },
+        { id: 'shop', label: 'Storefront', icon: Store, gradient: 'linear-gradient(135deg, #0ea5e9, #38bdf8)' },
+        { id: 'finance', label: 'Financials', icon: DollarSign, gradient: 'linear-gradient(135deg, #10b981, #34d399)' },
+        { id: 'data', label: 'Core Data', icon: Database, gradient: 'linear-gradient(135deg, #8b5cf6, #a78bfa)' }
     ];
 
     return (
-        <div className="repairs-view" style={{ maxWidth: '800px', margin: '0 auto' }}>
-            <div className="repairs-header">
-                <h2 style={{ fontSize: '1.5rem', fontWeight: 600 }}>Settings</h2>
-            </div>
+        <div className="repairs-view" style={{ padding: '2rem 3rem', display: 'flex', flexDirection: 'column', height: '100%', overflow: 'hidden' }}>
 
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '2rem' }}>
-
-                {/* Profile Card */}
-                <div className="section-card" style={{ display: 'flex', alignItems: 'center', gap: '1.5rem' }}>
-                    <div className="avatar" style={{ width: 80, height: 80, fontSize: '1.5rem' }}>
-                        {profile.name.split(' ').map(n => n[0]).join('')}
-                    </div>
-                    <div style={{ flex: 1 }}>
-                        <h3 style={{ fontSize: '1.25rem', marginBottom: '0.25rem' }}>{profile.name}</h3>
-                        <p style={{ color: 'var(--text-secondary)', margin: 0 }}>{profile.role}</p>
-                        <p style={{ color: 'var(--text-secondary)', margin: '0.15rem 0 0', fontSize: '0.85rem' }}>{profile.email}</p>
-                    </div>
-                    <button className="btn-secondary" onClick={() => { setEditProfile({ ...profile }); setShowProfileModal(true); }}>
-                        Edit Profile
-                    </button>
+            {/* Header Area */}
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2.5rem', flexShrink: 0 }}>
+                <div>
+                    <h2 style={{ fontSize: '2rem', fontWeight: 700, margin: 0, letterSpacing: '-0.02em', display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                        <Cpu size={28} style={{ color: 'var(--accent)' }} />
+                        System Config
+                    </h2>
+                    <p style={{ color: '#94a3b8', marginTop: '0.5rem', fontSize: '0.95rem' }}>Advanced settings and operational parameters.</p>
                 </div>
-
-                {sections.map((section, idx) => (
-                    <div key={idx}>
-                        <h3 style={{ color: 'var(--text-secondary)', fontSize: '0.9rem', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '1rem', paddingLeft: '0.5rem' }}>
-                            {section.title}
-                        </h3>
-                        <div className="section-card" style={{ padding: 0, overflow: 'hidden' }}>
-                            {section.items.map((item, itemIdx) => (
-                                <div
-                                    key={itemIdx}
-                                    style={{
-                                        display: 'flex',
-                                        alignItems: 'center',
-                                        padding: '1.25rem 1.5rem',
-                                        borderBottom: itemIdx < section.items.length - 1 ? '1px solid var(--border)' : 'none',
-                                        cursor: 'pointer',
-                                        transition: 'background 0.2s'
-                                    }}
-                                    onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(255,255,255,0.02)'}
-                                    onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
-                                    onClick={() => {
-                                        if (item.toggle) item.onToggle?.();
-                                        else if (item.action) item.action();
-                                    }}
-                                >
-                                    <div style={{
-                                        padding: '0.6rem',
-                                        background: 'rgba(56, 189, 248, 0.1)',
-                                        borderRadius: '8px',
-                                        color: 'var(--accent)',
-                                        marginRight: '1rem'
-                                    }}>
-                                        <item.icon size={20} />
-                                    </div>
-
-                                    <div style={{ flex: 1 }}>
-                                        <div style={{ fontWeight: 500 }}>{item.label}</div>
-                                        <div style={{ fontSize: '0.85rem', color: 'var(--text-secondary)' }}>{item.sub}</div>
-                                    </div>
-
-                                    {item.toggle ? (
-                                        <div style={{ color: item.state ? 'var(--accent)' : 'var(--text-secondary)' }}>
-                                            {item.state ? <ToggleRight size={28} /> : <ToggleLeft size={28} />}
-                                        </div>
-                                    ) : (
-                                        <ChevronRight size={18} style={{ color: 'var(--text-secondary)' }} />
-                                    )}
-                                </div>
-                            ))}
-                        </div>
-                    </div>
-                ))}
-
-                <button className="btn-danger" onClick={() => setShowSignOutConfirm(true)}>
+                <button
+                    onClick={() => setShowSignOutConfirm(true)}
+                    className="lock-btn"
+                >
                     <LogOut size={18} />
-                    Sign Out
+                    <span>Lock Interface</span>
                 </button>
             </div>
 
-            {/* Edit Profile Modal */}
-            <Modal isOpen={showProfileModal} onClose={() => setShowProfileModal(false)} title="Edit Profile">
-                <form onSubmit={handleSaveProfile}>
-                    <div className="form-group">
-                        <label>Full Name</label>
-                        <input className="form-input" value={editProfile.name} onChange={(e) => setEditProfile({ ...editProfile, name: e.target.value })} required />
-                    </div>
-                    <div className="form-group">
-                        <label>Email</label>
-                        <input className="form-input" type="email" value={editProfile.email} onChange={(e) => setEditProfile({ ...editProfile, email: e.target.value })} required />
-                    </div>
-                    <div className="form-group">
-                        <label>Role</label>
-                        <select className="form-select" value={editProfile.role} onChange={(e) => setEditProfile({ ...editProfile, role: e.target.value })}>
-                            <option>Administrator</option>
-                            <option>Technician</option>
-                            <option>Manager</option>
-                        </select>
-                    </div>
-                    <div className="form-actions">
-                        <button type="button" className="btn-secondary" onClick={() => setShowProfileModal(false)}>Cancel</button>
-                        <button type="submit" className="btn-primary">Save Changes</button>
-                    </div>
-                </form>
-            </Modal>
+            {/* Glowing Tab Navigation */}
+            <div className="settings-tabs-container" style={{ flexShrink: 0, marginBottom: '2.5rem' }}>
+                {menus.map(m => {
+                    const isActive = activeMenu === m.id;
+                    return (
+                        <button
+                            key={m.id}
+                            onClick={() => handleTabChange(m.id)}
+                            className={`settings-tab ${isActive ? 'active' : ''}`}
+                            style={{
+                                '--tab-gradient': m.gradient
+                            }}
+                        >
+                            <div className="tab-icon-wrapper">
+                                <m.icon size={18} />
+                            </div>
+                            <span style={{ fontWeight: isActive ? 600 : 500 }}>{m.label}</span>
+                            {isActive && <div className="tab-indicator" />}
+                        </button>
+                    )
+                })}
+            </div>
 
-            {/* Security Info Modal */}
-            <Modal isOpen={showSecurityModal} onClose={() => setShowSecurityModal(false)} title="Security Settings">
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', padding: '1rem', background: 'var(--bg-card)', borderRadius: '10px' }}>
-                        <Lock size={20} style={{ color: 'var(--accent)' }} />
-                        <div style={{ flex: 1 }}>
-                            <div style={{ fontWeight: 500 }}>Password</div>
-                            <div style={{ fontSize: '0.85rem', color: 'var(--text-secondary)' }}>Last changed 30 days ago</div>
+            {/* Content Area with Morphing Animation */}
+            <div className="settings-content-wrapper" style={{ flex: 1, position: 'relative', overflow: 'hidden' }}>
+                <div className={`settings-card-content ${isAnimating ? 'fade-out' : 'fade-in-up'}`}>
+
+                    {renderedMenu === 'shop' && (
+                        <div className="animated-form-grid" style={{ maxWidth: '1000px', margin: '0 auto' }}>
+                            <div className="form-column">
+                                <div className="floating-form-group" style={{ animationDelay: '0.1s' }}>
+                                    <input className="floating-input" value={shopConfig.name} onChange={e => setShopConfig({ ...shopConfig, name: e.target.value })} placeholder=" " />
+                                    <label className="floating-label">Registered Store Name</label>
+                                    <div className="focus-border"></div>
+                                </div>
+                                <div className="floating-form-group" style={{ animationDelay: '0.15s' }}>
+                                    <input className="floating-input" type="email" value={shopConfig.email} onChange={e => setShopConfig({ ...shopConfig, email: e.target.value })} placeholder=" " />
+                                    <label className="floating-label">Primary Business Email</label>
+                                    <div className="focus-border"></div>
+                                </div>
+                            </div>
+                            <div className="form-column">
+                                <div className="floating-form-group" style={{ animationDelay: '0.2s' }}>
+                                    <input className="floating-input" value={shopConfig.phone} onChange={e => setShopConfig({ ...shopConfig, phone: e.target.value })} placeholder=" " />
+                                    <label className="floating-label">Official Contact Number</label>
+                                    <div className="focus-border"></div>
+                                </div>
+                                <div className="floating-form-group" style={{ animationDelay: '0.25s' }}>
+                                    <input className="floating-input" value={shopConfig.address} onChange={e => setShopConfig({ ...shopConfig, address: e.target.value })} placeholder=" " />
+                                    <label className="floating-label">Full Local Address</label>
+                                    <div className="focus-border"></div>
+                                </div>
+                            </div>
+
+                            <div className="form-column" style={{ marginTop: '1rem' }}>
+                                <div className="floating-form-group" style={{ animationDelay: '0.3s' }}>
+                                    {/* Placeholder or future fields like Tax ID */}
+                                    <input className="floating-input" defaultValue="" placeholder=" " />
+                                    <label className="floating-label">Business Tax ID / EIN (Optional)</label>
+                                    <div className="focus-border"></div>
+                                </div>
+                                <div className="form-column" style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'flex-end' }}>
+                                    <div className="form-actions-row" style={{ animationDelay: '0.35s', width: '100%', marginTop: 0 }}>
+                                        <button className="btn-glow-primary" style={{ width: '100%', justifyContent: 'center' }} onClick={() => showMessage('Storefront details updated successfully!')}>
+                                            <Save size={18} /> Commit Changes
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
                         </div>
-                        <button className="btn-ghost">Change</button>
-                    </div>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', padding: '1rem', background: 'var(--bg-card)', borderRadius: '10px' }}>
-                        <Shield size={20} style={{ color: '#10b981' }} />
-                        <div style={{ flex: 1 }}>
-                            <div style={{ fontWeight: 500 }}>Two-Factor Authentication</div>
-                            <div style={{ fontSize: '0.85rem', color: 'var(--text-secondary)' }}>Enabled via authenticator app</div>
+                    )}
+
+                    {renderedMenu === 'finance' && (
+                        <div className="animated-form-grid" style={{ maxWidth: '1000px', margin: '0 auto' }}>
+                            <div className="form-column">
+                                <div className="floating-form-group" style={{ animationDelay: '0.1s' }}>
+                                    <select className="floating-input" value={finConfig.currency} onChange={e => setFinConfig({ ...finConfig, currency: e.target.value })}>
+                                        <option value="$">US Dollar ($)</option>
+                                        <option value="€">Euro (€)</option>
+                                        <option value="£">British Pound (£)</option>
+                                        <option value="Mex$">Mexican Peso (Mex$)</option>
+                                    </select>
+                                    <label className="floating-label" style={{ background: 'var(--bg-card)' }}>Operational Currency</label>
+                                    <div className="focus-border"></div>
+                                </div>
+                                <div className="floating-form-group" style={{ animationDelay: '0.2s' }}>
+                                    <input className="floating-input" type="number" step="0.1" value={finConfig.taxRate} onChange={e => setFinConfig({ ...finConfig, taxRate: e.target.value })} placeholder=" " />
+                                    <label className="floating-label">Baseline Tax Rate (%)</label>
+                                    <div className="focus-border"></div>
+                                </div>
+                            </div>
+                            <div className="form-column">
+                                <div className="floating-form-group" style={{ animationDelay: '0.15s' }}>
+                                    <select className="floating-input" defaultValue="none">
+                                        <option value="none">None</option>
+                                        <option value="paypal">PayPal</option>
+                                        <option value="stripe">Stripe</option>
+                                    </select>
+                                    <label className="floating-label" style={{ background: 'var(--bg-card)' }}>Payment Gateway Setup</label>
+                                    <div className="focus-border"></div>
+                                </div>
+                                <div className="floating-form-group" style={{ animationDelay: '0.25s' }}>
+                                    <input className="floating-input" type="text" defaultValue="Net 15" placeholder=" " />
+                                    <label className="floating-label">Default Invoice Terms</label>
+                                    <div className="focus-border"></div>
+                                </div>
+                            </div>
+
+                            <div className="form-actions-row" style={{ animationDelay: '0.3s', justifyContent: 'center', marginTop: '3rem' }}>
+                                <button className="btn-glow-success" style={{ width: '40%', justifyContent: 'center' }} onClick={() => showMessage('Financial baselines recalibrated!')}>
+                                    <Save size={18} /> Apply Financials
+                                </button>
+                            </div>
                         </div>
-                        <span className="status-badge status-completed">Active</span>
-                    </div>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', padding: '1rem', background: 'var(--bg-card)', borderRadius: '10px' }}>
-                        <AlertTriangle size={20} style={{ color: '#facc15' }} />
-                        <div style={{ flex: 1 }}>
-                            <div style={{ fontWeight: 500 }}>Active Sessions</div>
-                            <div style={{ fontSize: '0.85rem', color: 'var(--text-secondary)' }}>1 device currently logged in</div>
+                    )}
+
+                    {renderedMenu === 'data' && (
+                        <div className="animated-list" style={{ maxWidth: '1000px', margin: '0 auto' }}>
+                            <div className="form-column" style={{ gridTemplateColumns: '1fr 1fr' }}>
+                                <div className="data-action-card" style={{ animationDelay: '0.1s', flexDirection: 'column', textAlign: 'center', padding: '2.5rem 1.5rem', alignItems: 'center' }}>
+                                    <div className="data-icon" style={{ background: 'rgba(56, 189, 248, 0.1)', color: '#38bdf8', width: 64, height: 64, marginBottom: '1rem' }}>
+                                        <Download size={32} />
+                                    </div>
+                                    <div className="data-info" style={{ marginBottom: '1.5rem' }}>
+                                        <h4 style={{ fontSize: '1.25rem' }}>JSON System Backup</h4>
+                                        <p style={{ marginTop: '0.5rem' }}>Extract a snapshot of all local repairs, parts, and customer logs.</p>
+                                    </div>
+                                    <button className="btn-glow-primary" style={{ width: '100%', justifyContent: 'center' }} onClick={() => showMessage('Generating highly-compressed backup...')}>Extract</button>
+                                </div>
+
+                                <div className="data-action-card danger" style={{ animationDelay: '0.2s', flexDirection: 'column', textAlign: 'center', padding: '2.5rem 1.5rem', alignItems: 'center' }}>
+                                    <div className="data-icon" style={{ background: 'rgba(239, 68, 68, 0.1)', color: '#ef4444', width: 64, height: 64, marginBottom: '1rem' }}>
+                                        <Trash2 size={32} />
+                                    </div>
+                                    <div className="data-info" style={{ marginBottom: '1.5rem' }}>
+                                        <h4 style={{ color: '#ef4444', fontSize: '1.25rem' }}>Core Reset Protocol</h4>
+                                        <p style={{ marginTop: '0.5rem' }}>Irreversibly wipe the entire application state to factory defaults.</p>
+                                    </div>
+                                    <button className="btn-danger" style={{ width: '100%', padding: '0.85rem' }} onClick={() => showMessage('WARNING: Requires explicit admin override.')}>Purge</button>
+                                </div>
+                            </div>
                         </div>
-                    </div>
+                    )}
+
+                    {renderedMenu === 'account' && (
+                        <div className="animated-form-grid account-grid" style={{ maxWidth: '1000px', margin: '0 auto', alignItems: 'flex-start' }}>
+                            <div className="account-avatar-wrapper" style={{ animationDelay: '0.1s', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '1.5rem', marginTop: '1rem' }}>
+                                <div className="account-avatar-glow" style={{ width: 160, height: 160, fontSize: '4rem' }}>
+                                    {userConfig.name.split(' ').map(n => n[0]).join('')}
+                                </div>
+                                <div style={{ textAlign: 'center' }}>
+                                    <h3 style={{ margin: '0 0 0.25rem 0', fontSize: '1.25rem', fontWeight: 600 }}>{userConfig.name}</h3>
+                                    <span style={{ padding: '0.25rem 0.75rem', background: 'rgba(255,255,255,0.05)', borderRadius: '20px', fontSize: '0.85rem', color: '#f43f5e', border: '1px solid rgba(244,63,94,0.3)' }}>{userConfig.role}</span>
+                                </div>
+                            </div>
+                            <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '2rem', padding: '1rem 0' }}>
+                                <div className="form-column">
+                                    <div className="floating-form-group" style={{ animationDelay: '0.15s' }}>
+                                        <input className="floating-input" defaultValue="admin.david" placeholder=" " />
+                                        <label className="floating-label">Username</label>
+                                        <div className="focus-border"></div>
+                                    </div>
+                                    <div className="floating-form-group" style={{ animationDelay: '0.2s' }}>
+                                        <input className="floating-input" value={userConfig.name} onChange={e => setUserConfig({ ...userConfig, name: e.target.value })} placeholder=" " />
+                                        <label className="floating-label">Full Name</label>
+                                        <div className="focus-border"></div>
+                                    </div>
+                                </div>
+
+                                <div className="form-column">
+                                    <div className="floating-form-group" style={{ animationDelay: '0.25s' }}>
+                                        <input className="floating-input" type="email" defaultValue="admin@system.io" placeholder=" " />
+                                        <label className="floating-label">Email Address</label>
+                                        <div className="focus-border"></div>
+                                    </div>
+                                    <div className="floating-form-group" style={{ animationDelay: '0.3s' }}>
+                                        <input className="floating-input" type="tel" defaultValue="(555) 123-4567" placeholder=" " />
+                                        <label className="floating-label">Phone Number</label>
+                                        <div className="focus-border"></div>
+                                    </div>
+                                </div>
+
+                                <div className="form-column">
+                                    <div className="floating-form-group" style={{ animationDelay: '0.35s' }}>
+                                        <input className="floating-input" type="text" defaultValue="Mon-Fri, 9AM-6PM" placeholder=" " />
+                                        <label className="floating-label">Working Hours</label>
+                                        <div className="focus-border"></div>
+                                    </div>
+                                    <div className="form-actions-row" style={{ animationDelay: '0.4s', width: '100%', marginTop: '0', display: 'flex', alignItems: 'flex-end' }}>
+                                        <button className="btn-glow-primary" style={{ width: '100%', justifyContent: 'center', background: 'linear-gradient(135deg, #f43f5e, #fb7185)', boxShadow: '0 4px 15px rgba(244, 63, 94, 0.3)' }} onClick={() => showMessage('Profile info updated successfully!')}>
+                                            <Save size={18} /> Update
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    )}
                 </div>
-            </Modal>
+            </div>
 
-            {/* Sign Out Confirmation */}
-            <Modal isOpen={showSignOutConfirm} onClose={() => setShowSignOutConfirm(false)} title="Sign Out" width={400}>
+            {/* Lock Confirmation */}
+            <Modal isOpen={showSignOutConfirm} onClose={() => setShowSignOutConfirm(false)} title="Security Lock" width={400}>
                 <div className="confirm-content">
-                    <LogOut size={40} style={{ color: '#ef4444', marginBottom: '0.5rem' }} />
-                    <p>Are you sure you want to sign out?</p>
+                    <LogOut size={48} style={{ color: '#ef4444', marginBottom: '1rem', filter: 'drop-shadow(0 0 10px rgba(239, 68, 68, 0.4))' }} />
+                    <p style={{ fontSize: '1.1rem', fontWeight: 500 }}>Authorize system lockdown?</p>
+                    <p style={{ fontSize: '0.9rem', color: '#94a3b8', marginBottom: '2rem' }}>This will immediately terminate the active session and return to the main dashboard.</p>
                     <div className="confirm-actions">
-                        <button className="btn-secondary" onClick={() => setShowSignOutConfirm(false)}>Cancel</button>
-                        <button className="btn-danger" style={{ marginTop: 0, padding: '0.5rem 1.5rem' }} onClick={handleSignOut}>Sign Out</button>
+                        <button className="btn-secondary" onClick={() => setShowSignOutConfirm(false)}>Abort</button>
+                        <button className="btn-danger" style={{ marginTop: 0, padding: '0.6rem 2rem', fontSize: '1rem' }} onClick={handleSignOut}>Execute Lock</button>
                     </div>
                 </div>
             </Modal>
 
             {toast && (
-                <div className="toast toast-info">
+                <div className="toast toast-info" style={{ zIndex: 9999, animation: 'toastSlide 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards' }}>
                     <CheckCircle size={18} style={{ color: 'var(--accent)' }} />
                     {toast}
                 </div>
             )}
+
+            <style>{`
+                /* Tab Navigation Styles */
+                .settings-tabs-container {
+                    display: flex;
+                    gap: 1rem;
+                    background: var(--bg-card);
+                    padding: 0.5rem;
+                    border-radius: 16px;
+                    border: 1px solid rgba(255, 255, 255, 0.05);
+                    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
+                    align-self: flex-start;
+                }
+
+                .settings-tab {
+                    position: relative;
+                    display: flex;
+                    align-items: center;
+                    gap: 0.75rem;
+                    padding: 0.75rem 1.5rem;
+                    border-radius: 12px;
+                    border: none;
+                    background: transparent;
+                    color: #94a3b8;
+                    cursor: pointer;
+                    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+                    overflow: hidden;
+                    font-size: 0.95rem;
+                }
+
+                .settings-tab:hover:not(.active) {
+                    background: rgba(255, 255, 255, 0.03);
+                    color: #e2e8f0;
+                }
+
+                .settings-tab.active {
+                    color: #fff;
+                    background: rgba(255,255,255,0.05); /* Slight highlight backing */
+                }
+
+                .tab-icon-wrapper {
+                    position: relative;
+                    z-index: 2;
+                    display: flex;
+                    transition: all 0.3s;
+                }
+
+                .settings-tab.active .tab-icon-wrapper {
+                    color: #fff;
+                    filter: drop-shadow(0 0 8px rgba(255,255,255,0.4));
+                }
+
+                .tab-indicator {
+                    position: absolute;
+                    bottom: 0;
+                    left: 0;
+                    width: 100%;
+                    height: 100%;
+                    border-radius: 12px;
+                    background: radial-gradient(circle at center, var(--tab-gradient) 0%, transparent 100%);
+                    opacity: 0.1;
+                    z-index: 1;
+                    animation: pulseGlow 2s infinite alternate;
+                }
+
+                @keyframes pulseGlow {
+                    0% { opacity: 0.05; transform: scale(0.95); }
+                    100% { opacity: 0.15; transform: scale(1.05); }
+                }
+
+                /* Lock Button */
+                .lock-btn {
+                    display: flex;
+                    align-items: center;
+                    gap: 0.75rem;
+                    padding: 0.75rem 1.5rem;
+                    background: rgba(239, 68, 68, 0.1);
+                    color: #ef4444;
+                    border: 1px dashed rgba(239, 68, 68, 0.4);
+                    border-radius: 12px;
+                    cursor: pointer;
+                    font-weight: 600;
+                    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+                }
+
+                .lock-btn:hover {
+                    background: #ef4444;
+                    color: white;
+                    border: 1px solid #ef4444;
+                    box-shadow: 0 0 20px rgba(239, 68, 68, 0.4);
+                    transform: translateY(-2px);
+                }
+
+                /* Content Area Transitions */
+                .settings-content-wrapper {
+                    background: var(--bg-card);
+                    border-radius: 20px;
+                    border: 1px solid rgba(255, 255, 255, 0.05);
+                    box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+                    padding: 3rem;
+                    position: relative;
+                }
+
+                .settings-card-content {
+                    width: 100%;
+                    height: 100%;
+                }
+
+                .fade-in-up {
+                    animation: fadeInUp 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+                }
+
+                .fade-out {
+                    animation: fadeOut 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+                }
+
+                @keyframes fadeInUp {
+                    0% { opacity: 0; transform: translateY(20px) scale(0.98); }
+                    100% { opacity: 1; transform: translateY(0) scale(1); }
+                }
+
+                @keyframes fadeOut {
+                    0% { opacity: 1; transform: scale(1); }
+                    100% { opacity: 0; transform: scale(0.98); }
+                }
+
+                /* Animated Forms */
+                .animated-form-grid {
+                    display: flex;
+                    flex-direction: column;
+                    gap: 1.5rem;
+                    width: 100%;
+                }
+
+                .form-column {
+                    display: grid;
+                    grid-template-columns: 1fr 1fr;
+                    gap: 2rem;
+                }
+
+                .floating-form-group {
+                    position: relative;
+                    opacity: 0;
+                    animation: slideRight 0.5s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+                }
+
+                @keyframes slideRight {
+                    0% { opacity: 0; transform: translateX(-15px); }
+                    100% { opacity: 1; transform: translateX(0); }
+                }
+
+                .floating-input {
+                    display: block;
+                    width: 100%;
+                    padding: 0.75rem 1rem 0.75rem;
+                    background: rgba(15, 23, 42, 0.6);
+                    border: 1px solid rgba(255, 255, 255, 0.1);
+                    border-radius: 12px;
+                    color: var(--text-primary);
+                    font-size: 1rem;
+                    transition: all 0.3s;
+                    box-sizing: border-box;
+                }
+
+                .floating-input:focus {
+                    outline: none;
+                    background: rgba(15, 23, 42, 0.9);
+                    border-color: transparent;
+                }
+
+                .floating-label {
+                    position: absolute;
+                    top: 0.75rem;
+                    left: 1rem;
+                    color: #94a3b8;
+                    font-size: 1rem;
+                    transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+                    pointer-events: none;
+                    background: transparent;
+                    padding: 0 4px;
+                }
+
+                .floating-input:focus ~ .floating-label,
+                .floating-input:not(:placeholder-shown) ~ .floating-label {
+                    top: -1.5rem;
+                    left: 0.1rem;
+                    font-size: 0.8rem;
+                    color: var(--accent);
+                    background: var(--bg-card); /* mask behind line */
+                    font-weight: 500;
+                    border-radius: 4px;
+                }
+
+                .focus-border {
+                    position: absolute;
+                    bottom: 0;
+                    left: 0;
+                    width: 100%;
+                    height: 100%;
+                    border-radius: 12px;
+                    pointer-events: none;
+                    box-shadow: 0 0 0 2px var(--accent);
+                    opacity: 0;
+                    transform: scale(0.98);
+                    transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+                }
+
+                .floating-input:focus ~ .focus-border {
+                    opacity: 1;
+                    transform: scale(1);
+                    box-shadow: 0 0 15px rgba(56, 189, 248, 0.2), inset 0 0 0 1px var(--accent);
+                }
+
+                /* Glowing Buttons */
+                .form-actions-row {
+                    display: flex;
+                    justify-content: flex-end;
+                    margin-top: 2rem;
+                    opacity: 0;
+                    animation: slideRight 0.5s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+                }
+
+                .btn-glow-primary, .btn-glow-success {
+                    display: flex;
+                    align-items: center;
+                    gap: 0.75rem;
+                    padding: 0.85rem 2rem;
+                    border: none;
+                    border-radius: 12px;
+                    color: white;
+                    font-weight: 600;
+                    font-size: 1.05rem;
+                    cursor: pointer;
+                    position: relative;
+                    overflow: hidden;
+                    transition: all 0.3s;
+                    z-index: 1;
+                }
+
+                .btn-glow-primary {
+                    background: linear-gradient(135deg, #0ea5e9, #38bdf8);
+                    box-shadow: 0 4px 15px rgba(56, 189, 248, 0.3);
+                }
+                
+                .btn-glow-success {
+                    background: linear-gradient(135deg, #10b981, #34d399);
+                    box-shadow: 0 4px 15px rgba(16, 185, 129, 0.3);
+                }
+
+                .btn-glow-primary::before, .btn-glow-success::before {
+                    content: '';
+                    position: absolute;
+                    top: 0; left: 0; width: 100%; height: 100%;
+                    background: linear-gradient(135deg, rgba(255,255,255,0.3), transparent);
+                    z-index: -1;
+                    opacity: 0;
+                    transition: opacity 0.3s;
+                }
+
+                .btn-glow-primary:hover, .btn-glow-success:hover {
+                    transform: translateY(-2px);
+                }
+                
+                .btn-glow-primary:hover { box-shadow: 0 8px 25px rgba(56, 189, 248, 0.5); }
+                .btn-glow-success:hover { box-shadow: 0 8px 25px rgba(16, 185, 129, 0.5); }
+
+                .btn-glow-primary:hover::before, .btn-glow-success:hover::before {
+                    opacity: 1;
+                }
+
+                /* Data Cards */
+                .animated-list {
+                    display: flex;
+                    flex-direction: column;
+                    gap: 1.5rem;
+                }
+
+                .data-action-card {
+                    display: flex;
+                    align-items: center;
+                    gap: 1.5rem;
+                    padding: 1.5rem;
+                    background: rgba(255,255,255,0.02);
+                    border: 1px solid rgba(255,255,255,0.05);
+                    border-radius: 16px;
+                    transition: all 0.3s;
+                    opacity: 0;
+                    animation: slideRight 0.5s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+                }
+
+                .data-action-card:hover {
+                    background: rgba(255,255,255,0.04);
+                    border-color: rgba(56, 189, 248, 0.3);
+                    transform: translateX(5px);
+                    box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+                }
+
+                .data-action-card.danger:hover {
+                    border-color: rgba(239, 68, 68, 0.4);
+                }
+
+                .data-icon {
+                    width: 50px;
+                    height: 50px;
+                    border-radius: 14px;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                }
+
+                .data-info {
+                    flex: 1;
+                }
+
+                .data-info h4 {
+                    margin: 0 0 0.25rem 0;
+                    font-size: 1.1rem;
+                }
+                .data-info p {
+                    margin: 0;
+                    color: #94a3b8;
+                    font-size: 0.9rem;
+                }
+
+                /* Account Grid */
+                .account-grid {
+                    flex-direction: row;
+                    align-items: flex-start;
+                    gap: 3rem;
+                }
+                
+                .account-avatar-wrapper {
+                    opacity: 0;
+                    animation: scaleIn 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+                }
+
+                @keyframes scaleIn {
+                    0% { opacity: 0; transform: scale(0.8); }
+                    100% { opacity: 1; transform: scale(1); }
+                }
+
+                .account-avatar-glow {
+                    width: 120px;
+                    height: 120px;
+                    border-radius: 50%;
+                    background: linear-gradient(135deg, #f43f5e, #fb7185);
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    font-size: 3rem;
+                    font-weight: 700;
+                    color: white;
+                    box-shadow: 0 0 30px rgba(244, 63, 94, 0.4), inset 0 0 20px rgba(255,255,255,0.2);
+                    border: 4px solid rgba(255,255,255,0.1);
+                    position: relative;
+                }
+                
+                .account-avatar-glow::after {
+                    content: '';
+                    position: absolute;
+                    top: -10px; left: -10px; right: -10px; bottom: -10px;
+                    border-radius: 50%;
+                    border: 2px solid rgba(244, 63, 94, 0.5);
+                    animation: ripple 2s infinite cubic-bezier(0.16, 1, 0.3, 1);
+                }
+
+                @keyframes ripple {
+                    0% { transform: scale(1); opacity: 1; }
+                    100% { transform: scale(1.3); opacity: 0; }
+                }
+
+                @keyframes toastSlide {
+                    0% { opacity: 0; transform: translateY(20px); }
+                    100% { opacity: 1; transform: translateY(0); }
+                }
+
+            `}</style>
         </div>
     );
 };

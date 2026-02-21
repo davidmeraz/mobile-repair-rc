@@ -31,14 +31,14 @@ function App() {
 
   const renderContent = () => {
     switch (activePage) {
-      case 'Dashboard': return <Dashboard onNavigate={setActivePage} repairs={repairs} customers={customers} />;
-      case 'Repairs': return <Repairs searchQuery={searchQuery} deviceModels={deviceModels} customers={customers} repairs={repairs} setRepairs={setRepairs} parts={parts} setParts={setParts} />;
+      case 'Dashboard': return <Dashboard onNavigate={setActivePage} repairs={repairs} customers={customers} parts={parts} />;
+      case 'Repairs': return <Repairs searchQuery={searchQuery} deviceModels={deviceModels} setDeviceModels={setDeviceModels} customers={customers} setCustomers={setCustomers} repairs={repairs} setRepairs={setRepairs} parts={parts} setParts={setParts} />;
       case 'Customers': return <Customers searchQuery={searchQuery} customers={customers} setCustomers={setCustomers} repairs={repairs} />;
       case 'Device Models': return <DeviceModels searchQuery={searchQuery} models={deviceModels} setModels={setDeviceModels} />;
       case 'Inventory': return <Inventory searchQuery={searchQuery} parts={parts} setParts={setParts} repairs={repairs} setRepairs={setRepairs} />;
-      case 'Reports': return <Reports repairs={repairs} />;
+      case 'Reports': return <Reports repairs={repairs} parts={parts} />;
       case 'Settings': return <Settings onNavigate={setActivePage} />;
-      default: return <Dashboard onNavigate={setActivePage} repairs={repairs} customers={customers} />;
+      default: return <Dashboard onNavigate={setActivePage} repairs={repairs} customers={customers} parts={parts} />;
     }
   };
 
