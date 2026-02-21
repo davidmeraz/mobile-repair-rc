@@ -1,4 +1,4 @@
-import React, { useMemo } from 'react';
+import React, { useMemo, useState } from 'react';
 import {
     BarChart,
     Bar,
@@ -19,6 +19,8 @@ import MetricCard from '../components/MetricCard';
 import RecentActivity from '../components/RecentActivity';
 
 const Dashboard = ({ onNavigate, repairs = [], customers = [] }) => {
+    const [chartMode, setChartMode] = useState('Revenue'); // 'Revenue' | 'Repairs' | 'Profit'
+
     const totalRevenue = useMemo(() => {
         return repairs.reduce((sum, r) => sum + parseFloat((r.cost || '$0').replace('$', '')), 0);
     }, [repairs]);
@@ -113,7 +115,18 @@ const Dashboard = ({ onNavigate, repairs = [], customers = [] }) => {
                     <div className="animate-fade-in-up delay-300" style={{ display: 'flex', flexDirection: 'column', minHeight: 0, height: '100%' }}>
                         <div className="section-card">
                             <div className="section-header">
-                                <h3>Revenue & Repairs</h3>
+                                <h3>{chartMode === 'Revenue' ? 'Revenue' : chartMode === 'Repairs' ? 'Repairs' : 'Net Profit'} Overview</h3>
+                                <button
+                                    className="btn-secondary"
+                                    onClick={() => {
+                                        if (chartMode === 'Revenue') setChartMode('Repairs');
+                                        else if (chartMode === 'Repairs') setChartMode('Profit');
+                                        else setChartMode('Revenue');
+                                    }}
+                                    style={{ padding: '0.4rem 0.75rem', fontSize: '0.85rem' }}
+                                >
+                                    Switch to {chartMode === 'Revenue' ? 'Repairs' : chartMode === 'Repairs' ? 'Net Profit' : 'Revenue'}
+                                </button>
                             </div>
                             <div style={{ flex: 1, width: '100%', minHeight: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                                 {chartData.length === 0 ? (
@@ -149,54 +162,50 @@ const Dashboard = ({ onNavigate, repairs = [], customers = [] }) => {
                                                 axisLine={false}
                                                 tickLine={false}
                                                 tick={{ fill: '#94a3b8', fontSize: 12 }}
-                                                tickFormatter={(value) => `$${value}`}
-                                                yAxisId="left"
-                                            />
-                                            <YAxis
-                                                axisLine={false}
-                                                tickLine={false}
-                                                tick={{ fill: '#94a3b8', fontSize: 12 }}
-                                                orientation="right"
-                                                yAxisId="right"
+                                                tickFormatter={chartMode === 'Repairs' ? undefined : (value) => `$${value}`}
+                                                width={60}
                                             />
                                             <Tooltip
                                                 cursor={{ fill: 'rgba(255, 255, 255, 0.05)', stroke: 'none' }}
                                                 contentStyle={{ background: 'rgba(15, 23, 42, 0.95)', backdropFilter: 'blur(8px)', border: '1px solid rgba(255, 255, 255, 0.1)', borderRadius: '12px', boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.5)' }}
                                                 itemStyle={{ color: '#f8fafc', fontWeight: 600 }}
                                             />
-                                            <Bar
-                                                yAxisId="left"
-                                                name="Revenue"
-                                                dataKey="revenue"
-                                                barSize={12}
-                                                fill="url(#colorRevenueBar)"
-                                                radius={[6, 6, 0, 0]}
-                                                animationDuration={1500}
-                                                activeBar={false}
-                                                stroke="none"
-                                            />
-                                            <Bar
-                                                yAxisId="left"
-                                                name="Net Profit"
-                                                dataKey="profit"
-                                                barSize={12}
-                                                fill="url(#colorProfitBar)"
-                                                radius={[6, 6, 0, 0]}
-                                                animationDuration={1500}
-                                                activeBar={false}
-                                                stroke="none"
-                                            />
-                                            <Bar
-                                                yAxisId="right"
-                                                name="Repairs"
-                                                dataKey="repairs"
-                                                barSize={12}
-                                                fill="url(#colorRepairsBar)"
-                                                radius={[6, 6, 0, 0]}
-                                                animationDuration={1500}
-                                                activeBar={false}
-                                                stroke="none"
-                                            />
+                                            {chartMode === 'Revenue' && (
+                                                <Bar
+                                                    name="Revenue"
+                                                    dataKey="revenue"
+                                                    barSize={20}
+                                                    fill="url(#colorRevenueBar)"
+                                                    radius={[6, 6, 0, 0]}
+                                                    animationDuration={1500}
+                                                    activeBar={false}
+                                                    stroke="none"
+                                                />
+                                            )}
+                                            {chartMode === 'Profit' && (
+                                                <Bar
+                                                    name="Net Profit"
+                                                    dataKey="profit"
+                                                    barSize={20}
+                                                    fill="url(#colorProfitBar)"
+                                                    radius={[6, 6, 0, 0]}
+                                                    animationDuration={1500}
+                                                    activeBar={false}
+                                                    stroke="none"
+                                                />
+                                            )}
+                                            {chartMode === 'Repairs' && (
+                                                <Bar
+                                                    name="Repairs"
+                                                    dataKey="repairs"
+                                                    barSize={20}
+                                                    fill="url(#colorRepairsBar)"
+                                                    radius={[6, 6, 0, 0]}
+                                                    animationDuration={1500}
+                                                    activeBar={false}
+                                                    stroke="none"
+                                                />
+                                            )}
                                         </BarChart>
                                     </ResponsiveContainer>
                                 )}
