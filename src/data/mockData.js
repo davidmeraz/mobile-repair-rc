@@ -15,7 +15,7 @@ const PROBLEMS = [
     'No enciende', 'Software corrupto', 'Mica Cristal Templado', 'Cambio de Cámaras'
 ];
 
-const STATUSES = ['Completed', 'In Progress', 'Pending', 'Urgent'];
+const STATUSES = ['Completed', 'In Progress', 'Stopped'];
 
 export const generateMockData = () => {
     // Generate 100 Device Models
@@ -57,26 +57,44 @@ export const generateMockData = () => {
         const customer = customers[Math.floor(Math.random() * customers.length)];
         const model = deviceModels[Math.floor(Math.random() * deviceModels.length)];
         const status = STATUSES[Math.floor(Math.random() * STATUSES.length)];
-        const date = new Date(today);
-        date.setDate(today.getDate() - Math.floor(Math.random() * 30));
+        const start = new Date(2026, 0, 1); // 1 Jan 2026
+        const end = new Date(2026, 11, 31); // 31 Dec 2026
+        const date = new Date(start.getTime() + Math.random() * (end.getTime() - start.getTime()));
 
         const costVal = (30 + Math.random() * 400);
         const partsCostVal = costVal * (0.3 + Math.random() * 0.4);
 
+        // Professional DD/MM/YYYY format padding
+        const day = date.getDate().toString().padStart(2, '0');
+        const month = (date.getMonth() + 1).toString().padStart(2, '0');
+        const year = date.getFullYear();
+        const dateStr = `${day}/${month}/${year}`; // DD/MM/YYYY
+
+        // Professional hh:mm:ss A format padding
+        const timeOptions = { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: true };
+        const timeStr = date.toLocaleTimeString('en-US', timeOptions);
+
         repairs.push({
-            id: i,
+            // ID will be assigned after sorting
             customer: customer.name,
             device: model.model,
             problem: PROBLEMS[Math.floor(Math.random() * PROBLEMS.length)],
             status,
             cost: `$${costVal.toFixed(2)}`,
             partsCost: `$${partsCostVal.toFixed(2)}`,
-            date: date.toLocaleDateString()
+            date: dateStr,
+            hours: timeStr,
+            fullDateString: date.toLocaleString('en-US') // Keep for accurate sorting
         });
     }
 
-    // Sort repairs by ID descending
-    repairs.sort((a, b) => b.id - a.id);
+    // 1. Sort repairs by full date string ascending (oldest to newest)
+    repairs.sort((a, b) => new Date(a.fullDateString) - new Date(b.fullDateString));
+
+    // 2. Assign logical sequential IDs after sorting so they make chronological sense (1 to 100)
+    repairs.forEach((repair, index) => {
+        repair.id = index + 1;
+    });
 
     return { deviceModels, customers, repairs };
 };

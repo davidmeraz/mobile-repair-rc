@@ -1,7 +1,7 @@
 import React, { useMemo, useState } from 'react';
 import {
-    BarChart,
-    Bar,
+    AreaChart,
+    Area,
     XAxis,
     YAxis,
     CartesianGrid,
@@ -52,7 +52,8 @@ const Dashboard = ({ onNavigate, repairs = [], customers = [] }) => {
                 shortDate: key !== 'Unknown' ? key.split('/').slice(0, 2).join('/') : key, // e.g. "20/2"
                 revenue: 0,
                 profit: 0,
-                repairs: 0
+                repairs: 0,
+                rawDate: new Date(key)
             };
             const rev = parseFloat((r.cost || '$0').replace('$', ''));
             const part = parseFloat((r.partsCost || '$0').replace('$', ''));
@@ -62,15 +63,28 @@ const Dashboard = ({ onNavigate, repairs = [], customers = [] }) => {
             byDate[key].repairs += 1;
         });
 
-        // Return sorted by original string date (since we mocked it sequentially backwards this is safe, otherwise we'd parse)
-        return Object.values(byDate).sort((a, b) => {
+        const sortedData = Object.values(byDate).sort((a, b) => {
             if (a.name === 'Unknown') return -1;
             if (b.name === 'Unknown') return 1;
-            // Rough sort by day if they are all same month/year
-            const dayA = parseInt(a.name.split('/')[0]) || 0;
-            const dayB = parseInt(b.name.split('/')[0]) || 0;
-            return dayA - dayB;
+            return a.rawDate - b.rawDate;
         });
+
+        let accumulatedRevenue = 0;
+        let accumulatedProfit = 0;
+        let accumulatedRepairs = 0;
+
+        return sortedData.map((data) => {
+            accumulatedRevenue += data.revenue;
+            accumulatedProfit += data.profit;
+            accumulatedRepairs += data.repairs;
+
+            return {
+                ...data, // Keep raw parts if needed, but override with accumulated
+                revenue: accumulatedRevenue,
+                profit: accumulatedProfit,
+                repairs: accumulatedRepairs
+            };
+        }).map(({ rawDate, ...rest }) => rest);
     }, [repairs]);
 
     return (
@@ -135,19 +149,19 @@ const Dashboard = ({ onNavigate, repairs = [], customers = [] }) => {
                                     </div>
                                 ) : (
                                     <ResponsiveContainer width="100%" height="100%" style={{ outline: 'none' }}>
-                                        <BarChart data={chartData} margin={{ top: 20, right: 20, left: 0, bottom: 20 }} style={{ outline: 'none' }}>
+                                        <AreaChart data={chartData} margin={{ top: 20, right: 20, left: 0, bottom: 20 }} style={{ outline: 'none' }}>
                                             <defs>
                                                 <linearGradient id="colorRevenueBar" x1="0" y1="0" x2="0" y2="1">
-                                                    <stop offset="0%" stopColor="#38bdf8" stopOpacity={1} />
-                                                    <stop offset="100%" stopColor="#818cf8" stopOpacity={0.5} />
+                                                    <stop offset="5%" stopColor="#38bdf8" stopOpacity={0.8} />
+                                                    <stop offset="95%" stopColor="#38bdf8" stopOpacity={0} />
                                                 </linearGradient>
                                                 <linearGradient id="colorProfitBar" x1="0" y1="0" x2="0" y2="1">
-                                                    <stop offset="0%" stopColor="#10b981" stopOpacity={1} />
-                                                    <stop offset="100%" stopColor="#34d399" stopOpacity={0.5} />
+                                                    <stop offset="5%" stopColor="#10b981" stopOpacity={0.8} />
+                                                    <stop offset="95%" stopColor="#10b981" stopOpacity={0} />
                                                 </linearGradient>
                                                 <linearGradient id="colorRepairsBar" x1="0" y1="0" x2="0" y2="1">
-                                                    <stop offset="0%" stopColor="#f472b6" stopOpacity={1} />
-                                                    <stop offset="100%" stopColor="#c084fc" stopOpacity={0.5} />
+                                                    <stop offset="5%" stopColor="#f472b6" stopOpacity={0.8} />
+                                                    <stop offset="95%" stopColor="#f472b6" stopOpacity={0} />
                                                 </linearGradient>
                                             </defs>
                                             <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="rgba(51, 65, 85, 0.4)" />
@@ -166,47 +180,50 @@ const Dashboard = ({ onNavigate, repairs = [], customers = [] }) => {
                                                 width={60}
                                             />
                                             <Tooltip
-                                                cursor={{ fill: 'rgba(255, 255, 255, 0.05)', stroke: 'none' }}
+                                                cursor={{ stroke: 'rgba(255, 255, 255, 0.1)', strokeWidth: 2, fill: 'transparent' }}
                                                 contentStyle={{ background: 'rgba(15, 23, 42, 0.95)', backdropFilter: 'blur(8px)', border: '1px solid rgba(255, 255, 255, 0.1)', borderRadius: '12px', boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.5)' }}
                                                 itemStyle={{ color: '#f8fafc', fontWeight: 600 }}
                                             />
                                             {chartMode === 'Revenue' && (
-                                                <Bar
+                                                <Area
+                                                    type="monotone"
                                                     name="Revenue"
                                                     dataKey="revenue"
-                                                    barSize={20}
+                                                    stroke="#38bdf8"
+                                                    strokeWidth={3}
+                                                    fillOpacity={1}
                                                     fill="url(#colorRevenueBar)"
-                                                    radius={[6, 6, 0, 0]}
                                                     animationDuration={1500}
-                                                    activeBar={false}
-                                                    stroke="none"
+                                                    activeDot={{ r: 6, fill: '#38bdf8', stroke: '#0f172a', strokeWidth: 2 }}
                                                 />
                                             )}
                                             {chartMode === 'Profit' && (
-                                                <Bar
+                                                <Area
+                                                    type="monotone"
                                                     name="Net Profit"
                                                     dataKey="profit"
-                                                    barSize={20}
+                                                    stroke="#10b981"
+                                                    strokeWidth={3}
+                                                    fillOpacity={1}
                                                     fill="url(#colorProfitBar)"
-                                                    radius={[6, 6, 0, 0]}
                                                     animationDuration={1500}
-                                                    activeBar={false}
-                                                    stroke="none"
+                                                    activeDot={{ r: 6, fill: '#10b981', stroke: '#0f172a', strokeWidth: 2 }}
                                                 />
                                             )}
                                             {chartMode === 'Repairs' && (
-                                                <Bar
+                                                <Area
+                                                    type="monotone"
                                                     name="Repairs"
                                                     dataKey="repairs"
-                                                    barSize={20}
+                                                    stroke="#f472b6"
+                                                    strokeWidth={3}
+                                                    fillOpacity={1}
                                                     fill="url(#colorRepairsBar)"
-                                                    radius={[6, 6, 0, 0]}
                                                     animationDuration={1500}
-                                                    activeBar={false}
-                                                    stroke="none"
+                                                    activeDot={{ r: 6, fill: '#f472b6', stroke: '#0f172a', strokeWidth: 2 }}
                                                 />
                                             )}
-                                        </BarChart>
+                                        </AreaChart>
                                     </ResponsiveContainer>
                                 )}
                             </div>

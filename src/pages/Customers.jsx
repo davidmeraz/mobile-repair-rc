@@ -109,13 +109,14 @@ const Customers = ({ searchQuery = '', customers, setCustomers, repairs = [] }) 
         setShowHistoryModal(true);
     };
 
-    const getStatusClass = (status) => {
-        switch (status) {
-            case 'Completed': return 'status-completed';
-            case 'In Progress': return 'status-in-progress';
-            case 'Pending': return 'status-pending';
-            default: return '';
-        }
+    const getStatusIcon = (status) => {
+        let colorClass = '';
+        const lower = status?.toLowerCase() || '';
+        if (lower === 'completed') colorClass = 'pulse-completed';
+        else if (lower === 'in progress') colorClass = 'pulse-in-progress';
+        else if (lower === 'stopped') colorClass = 'pulse-stopped';
+        else colorClass = 'pulse-stopped';
+        return <div className={`pulse-dot ${colorClass}`}></div>;
     };
 
     return (
@@ -267,7 +268,10 @@ const Customers = ({ searchQuery = '', customers, setCustomers, repairs = [] }) 
                                         </div>
                                     </div>
                                     <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-                                        <span className={`status-badge ${getStatusClass(item.status)}`}>{item.status}</span>
+                                        <div style={{ display: 'inline-flex', alignItems: 'center', gap: '0.5rem', color: 'var(--text-secondary)', fontSize: '0.85rem', fontWeight: 500, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                                            {getStatusIcon(item.status)}
+                                            {item.status}
+                                        </div>
                                         <span style={{ fontWeight: 600 }}>{item.cost}</span>
                                     </div>
                                 </div>

@@ -23,7 +23,9 @@ const Repairs = ({ searchQuery = '', deviceModels = [], customers = [], repairs,
         customer: '',
         device: '',
         problem: '',
-        status: 'Pending',
+        status: 'In Progress',
+        date: '',
+        hours: '',
         cost: '',
         selectedParts: []
     };
@@ -67,21 +69,13 @@ const Repairs = ({ searchQuery = '', deviceModels = [], customers = [], repairs,
         });
 
     const getStatusIcon = (status) => {
-        switch (status) {
-            case 'Completed': return <CheckCircle size={16} style={{ color: '#10b981' }} />;
-            case 'In Progress': return <Clock size={16} style={{ color: '#facc15' }} />;
-            case 'Pending': return <AlertTriangle size={16} style={{ color: '#94a3b8' }} />;
-            default: return null;
-        }
-    };
-
-    const getStatusClass = (status) => {
-        switch (status) {
-            case 'Completed': return 'status-completed';
-            case 'In Progress': return 'status-in-progress';
-            case 'Pending': return 'status-pending';
-            default: return '';
-        }
+        let colorClass = '';
+        const lower = status?.toLowerCase() || '';
+        if (lower === 'completed') colorClass = 'pulse-completed';
+        else if (lower === 'in progress') colorClass = 'pulse-in-progress';
+        else if (lower === 'stopped') colorClass = 'pulse-stopped';
+        else colorClass = 'pulse-stopped';
+        return <div className={`pulse-dot ${colorClass}`}></div>;
     };
 
     const nextId = () => {
@@ -91,8 +85,20 @@ const Repairs = ({ searchQuery = '', deviceModels = [], customers = [], repairs,
     };
 
     const openAddModal = () => {
+        const now = new Date();
+        const d = now.getDate().toString().padStart(2, '0');
+        const m = (now.getMonth() + 1).toString().padStart(2, '0');
+        const y = now.getFullYear();
+        const generatedDate = `${d}/${m}/${y}`;
+        const timeOptions = { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: true };
+        const generatedTime = now.toLocaleTimeString('en-US', timeOptions);
+
         setEditRepair(null);
-        setForm(initialForm);
+        setForm({
+            ...initialForm,
+            date: generatedDate,
+            hours: generatedTime
+        });
         setShowModal(true);
     };
 
@@ -103,6 +109,8 @@ const Repairs = ({ searchQuery = '', deviceModels = [], customers = [], repairs,
             device: repair.device,
             problem: repair.problem,
             status: repair.status,
+            date: repair.date || '',
+            hours: repair.hours || '',
             cost: repair.cost.replace('$', ''),
             selectedParts: repair.usedPartsIds || []
         });
@@ -126,7 +134,12 @@ const Repairs = ({ searchQuery = '', deviceModels = [], customers = [], repairs,
         e.preventDefault();
         if (!form.customer || !form.device || !form.problem || !form.cost) return;
 
-        const dateStr = new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+        const now = new Date();
+        const d = now.getDate().toString().padStart(2, '0');
+        const m = (now.getMonth() + 1).toString().padStart(2, '0');
+        const y = now.getFullYear();
+        const fallbackDateStr = `${d}/${m}/${y}`;
+        const finalDate = form.date || fallbackDateStr;
         const repairId = editRepair ? editRepair.id : nextId();
 
         // 1. Update Parts Status (Link/Unlink)
@@ -136,7 +149,7 @@ const Repairs = ({ searchQuery = '', deviceModels = [], customers = [], repairs,
                 return {
                     ...p,
                     used: true,
-                    usedDate: dateStr,
+                    usedDate: finalDate,
                     usedForRepairId: repairId,
                     usedForCustomer: form.customer,
                     usedForDevice: form.device
@@ -166,6 +179,8 @@ const Repairs = ({ searchQuery = '', deviceModels = [], customers = [], repairs,
                         device: form.device,
                         problem: form.problem,
                         status: form.status,
+                        date: finalDate,
+                        hours: form.hours || '',
                         cost: `$${form.cost}`,
                         usedPartsIds: form.selectedParts
                     }
@@ -179,7 +194,8 @@ const Repairs = ({ searchQuery = '', deviceModels = [], customers = [], repairs,
                 device: form.device,
                 problem: form.problem,
                 status: form.status,
-                date: dateStr,
+                date: finalDate,
+                hours: form.hours || '',
                 cost: `$${form.cost}`,
                 usedPartsIds: form.selectedParts
             };
@@ -242,9 +258,10 @@ const Repairs = ({ searchQuery = '', deviceModels = [], customers = [], repairs,
                             <th>Customer</th>
                             <th>Device</th>
                             <th>Problem</th>
-                            <th>Status</th>
                             <th>Date</th>
+                            <th>Hours</th>
                             <th>Cost</th>
+                            <th>Status</th>
                             <th>Actions</th>
                         </tr>
                     </thead>
@@ -269,14 +286,15 @@ const Repairs = ({ searchQuery = '', deviceModels = [], customers = [], repairs,
                                     <td>{repair.customer}</td>
                                     <td>{repair.device}</td>
                                     <td>{repair.problem}</td>
+                                    <td>{repair.date}</td>
+                                    <td>{repair.hours || '-'}</td>
+                                    <td style={{ fontWeight: 600 }}>{repair.cost}</td>
                                     <td>
-                                        <div className={`status-badge ${getStatusClass(repair.status)}`} style={{ display: 'inline-flex', alignItems: 'center', gap: '0.5rem', width: 'fit-content' }}>
+                                        <div style={{ display: 'inline-flex', alignItems: 'center', gap: '0.5rem', width: 'fit-content', color: 'var(--text-secondary)', fontSize: '0.85rem', fontWeight: 500, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
                                             {getStatusIcon(repair.status)}
                                             {repair.status}
                                         </div>
                                     </td>
-                                    <td>{repair.date}</td>
-                                    <td style={{ fontWeight: 600 }}>{repair.cost}</td>
                                     <td>
                                         <div className="action-wrapper" ref={openDropdown === repair.id ? dropdownRef : null}>
                                             <MoreHorizontal
@@ -354,9 +372,19 @@ const Repairs = ({ searchQuery = '', deviceModels = [], customers = [], repairs,
                                 <input className="form-input" placeholder="e.g. iPhone 14 Pro" value={form.device} onChange={(e) => setForm({ ...form, device: e.target.value })} required />
                             )}
                         </div>
-                        <div className="form-group">
-                            <label>Cost ($)</label>
-                            <input className="form-input" type="number" placeholder="e.g. 120" value={form.cost} onChange={(e) => setForm({ ...form, cost: e.target.value })} required />
+                        <div className="form-group" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '1rem' }}>
+                            <div>
+                                <label>Date</label>
+                                <input className="form-input" type="text" placeholder="e.g. 05/12/2026" value={form.date} onChange={(e) => setForm({ ...form, date: e.target.value })} required />
+                            </div>
+                            <div>
+                                <label>Hours</label>
+                                <input className="form-input" type="text" placeholder="e.g. 10:06:48 AM" value={form.hours} onChange={(e) => setForm({ ...form, hours: e.target.value })} />
+                            </div>
+                            <div>
+                                <label>Cost ($)</label>
+                                <input className="form-input" type="number" placeholder="e.g. 120" value={form.cost} onChange={(e) => setForm({ ...form, cost: e.target.value })} required />
+                            </div>
                         </div>
                     </div>
                     <div className="form-group">
@@ -414,7 +442,7 @@ const Repairs = ({ searchQuery = '', deviceModels = [], customers = [], repairs,
                     <div className="form-group">
                         <label>Status</label>
                         <select className="form-select" value={form.status} onChange={(e) => setForm({ ...form, status: e.target.value })}>
-                            <option value="Pending">Pending</option>
+                            <option value="Stopped">Stopped</option>
                             <option value="In Progress">In Progress</option>
                             <option value="Completed">Completed</option>
                         </select>

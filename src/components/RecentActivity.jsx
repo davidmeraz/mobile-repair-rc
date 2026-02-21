@@ -9,8 +9,8 @@ const RecentActivity = ({ onNavigate, repairs = [] }) => {
         switch (status) {
             case 'Completed': return 'pulse-completed';
             case 'In Progress': return 'pulse-in-progress';
-            case 'Pending': return 'pulse-pending';
-            default: return '';
+            case 'Stopped': return 'pulse-stopped';
+            default: return 'pulse-stopped';
         }
     };
 

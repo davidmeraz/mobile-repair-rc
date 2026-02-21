@@ -546,9 +546,9 @@
   }
 }
 
-.pulse-pending {
-  background-color: #facc15;
-  color: #facc15;
+.pulse-stopped {
+  background-color: #f87171;
+  color: #f87171;
 }
 
 .pulse-in-progress {
@@ -567,10 +567,6 @@
 }
 
 /* No pulse for completed */
-.pulse-urgent {
-  background-color: #f87171;
-  color: #f87171;
-}
 
 /* Responsive adjustments */
 @media (max-width: 1024px) {
@@ -669,7 +665,7 @@
 
 /* ===== In-Progress Status ===== */
 .status-in-progress {
-  background: rgba(234, 179, 8, 0.15);
+  background: transparent;
   color: #facc15;
 }
 
