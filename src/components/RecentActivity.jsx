@@ -1,18 +1,14 @@
 import React from 'react';
 
-const RecentActivity = () => {
-    const activities = [
-        { id: 1, title: 'Screen Replacement', client: 'J. Doe', model: 'iPhone 14', cost: '$120', status: 'completed' },
-        { id: 2, title: 'Battery Change', client: 'A. Smith', model: 'Samsung S22', cost: '$80', status: 'pending' },
-        { id: 3, title: 'Water Damage', client: 'R. Roe', model: 'Pixel 7', cost: 'Quote', status: 'urgent' },
-        { id: 4, title: 'Charging Port', client: 'K. West', model: 'iPad Air 5', cost: '$65', status: 'completed' }
-    ];
+const RecentActivity = ({ onNavigate, repairs = [] }) => {
+    // Show the 5 most recent repairs
+    const recentRepairs = repairs.slice(0, 5);
 
     const getStatusBadge = (status) => {
         switch (status) {
-            case 'completed': return 'status-completed';
-            case 'pending': return 'status-pending';
-            case 'urgent': return 'status-urgent';
+            case 'Completed': return 'status-completed';
+            case 'In Progress': return 'status-in-progress';
+            case 'Pending': return 'status-pending';
             default: return '';
         }
     };
@@ -21,25 +17,37 @@ const RecentActivity = () => {
         <div className="section-card">
             <div className="section-header">
                 <h3>Recent Repairs</h3>
-                <span className="section-action">View All</span>
+                <span
+                    className="section-action"
+                    onClick={() => onNavigate?.('Repairs')}
+                    style={{ cursor: 'pointer' }}
+                >
+                    View All
+                </span>
             </div>
             <div className="activity-list">
-                {activities.map((activity) => (
-                    <div key={activity.id} className="activity-item">
-                        <div className="activity-info">
-                            <h4>{activity.title}</h4>
-                            <p>{activity.client} • {activity.model}</p>
-                        </div>
-                        <div className="activity-meta">
-                            <span className={`status-badge ${getStatusBadge(activity.status)}`}>
-                                {activity.status}
-                            </span>
-                        </div>
-                        <div className="activity-cost" style={{ fontWeight: 600, marginLeft: 'auto' }}>
-                            {activity.cost}
-                        </div>
+                {recentRepairs.length === 0 ? (
+                    <div style={{ padding: '2rem', textAlign: 'center', color: 'var(--text-secondary)' }}>
+                        No repairs yet — create your first repair to see activity here
                     </div>
-                ))}
+                ) : (
+                    recentRepairs.map((repair) => (
+                        <div key={repair.id} className="activity-item">
+                            <div className="activity-info">
+                                <h4>{repair.problem}</h4>
+                                <p>{repair.customer} • {repair.device}</p>
+                            </div>
+                            <div className="activity-meta">
+                                <span className={`status-badge ${getStatusBadge(repair.status)}`}>
+                                    {repair.status}
+                                </span>
+                            </div>
+                            <div className="activity-cost" style={{ fontWeight: 600, marginLeft: 'auto' }}>
+                                {repair.cost}
+                            </div>
+                        </div>
+                    ))
+                )}
             </div>
         </div>
     );

@@ -16,6 +16,7 @@ const Sidebar = ({ activePage, onNavigate }) => {
         { name: 'Dashboard', icon: LayoutDashboard },
         { name: 'Repairs', icon: PenTool },
         { name: 'Customers', icon: Users },
+        { name: 'Device Models', icon: Smartphone },
         { name: 'Inventory', icon: Package },
         { name: 'Reports', icon: PieChart },
         { name: 'Settings', icon: Settings }

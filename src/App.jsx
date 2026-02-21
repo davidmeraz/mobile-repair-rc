@@ -8,27 +8,34 @@ import Customers from './pages/Customers'
 import Inventory from './pages/Inventory'
 import Reports from './pages/Reports'
 import Settings from './pages/Settings'
+import DeviceModels from './pages/DeviceModels'
 
 function App() {
   const [activePage, setActivePage] = useState('Dashboard');
+  const [searchQuery, setSearchQuery] = useState('');
+  const [deviceModels, setDeviceModels] = useState([]);
+  const [customers, setCustomers] = useState([]);
+  const [repairs, setRepairs] = useState([]);
+  const [parts, setParts] = useState([]);
 
   const renderContent = () => {
     switch (activePage) {
-      case 'Dashboard': return <Dashboard />;
-      case 'Repairs': return <Repairs />;
-      case 'Customers': return <Customers />;
-      case 'Inventory': return <Inventory />;
-      case 'Reports': return <Reports />;
-      case 'Settings': return <Settings />;
-      default: return <Dashboard />;
+      case 'Dashboard': return <Dashboard onNavigate={setActivePage} repairs={repairs} customers={customers} />;
+      case 'Repairs': return <Repairs searchQuery={searchQuery} deviceModels={deviceModels} customers={customers} repairs={repairs} setRepairs={setRepairs} />;
+      case 'Customers': return <Customers searchQuery={searchQuery} customers={customers} setCustomers={setCustomers} repairs={repairs} />;
+      case 'Device Models': return <DeviceModels searchQuery={searchQuery} models={deviceModels} setModels={setDeviceModels} />;
+      case 'Inventory': return <Inventory searchQuery={searchQuery} parts={parts} setParts={setParts} repairs={repairs} />;
+      case 'Reports': return <Reports repairs={repairs} />;
+      case 'Settings': return <Settings onNavigate={setActivePage} />;
+      default: return <Dashboard onNavigate={setActivePage} repairs={repairs} customers={customers} />;
     }
   };
 
   return (
     <div className="app-container">
-      <Sidebar activePage={activePage} onNavigate={setActivePage} />
+      <Sidebar activePage={activePage} onNavigate={(page) => { setActivePage(page); setSearchQuery(''); }} />
       <main className="main-content">
-        <Header title={activePage} />
+        <Header title={activePage} searchQuery={searchQuery} onSearchChange={setSearchQuery} />
         {renderContent()}
       </main>
     </div>

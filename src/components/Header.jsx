@@ -1,7 +1,7 @@
 import React from 'react';
 import { Search, Bell, User } from 'lucide-react';
 
-const Header = ({ title }) => {
+const Header = ({ title, searchQuery, onSearchChange }) => {
     return (
         <header className="top-bar">
             <div className="page-title">
@@ -10,18 +10,17 @@ const Header = ({ title }) => {
 
             <div className="header-actions">
                 <div className="search-bar">
-                    <Search size={18} className="text-slate-400" />
-                    <input type="text" placeholder="Search invoices, clients..." />
+                    <Search size={18} style={{ color: 'var(--text-secondary)' }} />
+                    <input
+                        type="text"
+                        placeholder="Search repairs, customers..."
+                        value={searchQuery || ''}
+                        onChange={(e) => onSearchChange?.(e.target.value)}
+                    />
                 </div>
 
                 <div className="user-profile">
-                    <button style={{
-                        background: 'none',
-                        border: 'none',
-                        padding: 8,
-                        cursor: 'pointer',
-                        color: 'var(--text-secondary)'
-                    }}>
+                    <button className="modal-close-btn">
                         <Bell size={20} />
                     </button>
 
