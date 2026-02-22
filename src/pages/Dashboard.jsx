@@ -21,6 +21,37 @@ import RecentActivity from '../components/RecentActivity';
 const Dashboard = ({ onNavigate, repairs = [], customers = [], parts = [] }) => {
     const [chartMode, setChartMode] = useState('Revenue'); // 'Revenue' | 'Repairs' | 'Profit'
 
+    const availableMonths = useMemo(() => {
+        const months = new Set();
+        repairs.forEach(r => {
+            if (r.status === 'Completed' && r.date) {
+                try {
+                    const d = new Date(r.date);
+                    if (!isNaN(d.getTime())) {
+                        months.add(`${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`);
+                    }
+                } catch (e) { }
+            }
+        });
+        const sorted = Array.from(months).sort().reverse();
+        if (sorted.length === 0) {
+            const d = new Date();
+            sorted.push(`${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`);
+        }
+        return sorted;
+    }, [repairs]);
+
+    const [selectedMonth, setSelectedMonth] = useState(() => {
+        const d = new Date();
+        return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+    });
+
+    const formatMonthLabel = (yyyymm) => {
+        const [y, m] = yyyymm.split('-');
+        const dateObj = new Date(parseInt(y), parseInt(m) - 1, 1);
+        return dateObj.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
+    };
+
     const totalRevenue = useMemo(() => {
         return repairs.filter(r => r.status === 'Completed').reduce((sum, r) => sum + parseFloat((r.cost || '$0').replace('$', '')), 0);
     }, [repairs]);
@@ -53,7 +84,16 @@ const Dashboard = ({ onNavigate, repairs = [], customers = [], parts = [] }) => 
 
     // Build chart data from real completed repairs grouped by date
     const chartData = useMemo(() => {
-        const completed = repairs.filter(r => r.status === 'Completed');
+        const completed = repairs.filter(r => {
+            if (r.status !== 'Completed') return false;
+            if (!r.date) return false;
+            try {
+                const dateObj = new Date(r.date);
+                const monthStr = `${dateObj.getFullYear()}-${String(dateObj.getMonth() + 1).padStart(2, '0')}`;
+                return monthStr === selectedMonth;
+            } catch { return false; }
+        });
+
         if (completed.length === 0) return [];
         const byDate = {};
         completed.forEach(r => {
@@ -149,17 +189,29 @@ const Dashboard = ({ onNavigate, repairs = [], customers = [], parts = [] }) => 
                         <div className="section-card">
                             <div className="section-header">
                                 <h3>{chartMode === 'Revenue' ? 'Revenue' : chartMode === 'Repairs' ? 'Repairs' : 'Net Profit'} Overview</h3>
-                                <button
-                                    className="btn-secondary"
-                                    onClick={() => {
-                                        if (chartMode === 'Revenue') setChartMode('Repairs');
-                                        else if (chartMode === 'Repairs') setChartMode('Profit');
-                                        else setChartMode('Revenue');
-                                    }}
-                                    style={{ padding: '0.4rem 0.75rem', fontSize: '0.85rem' }}
-                                >
-                                    Switch to {chartMode === 'Revenue' ? 'Repairs' : chartMode === 'Repairs' ? 'Net Profit' : 'Revenue'}
-                                </button>
+                                <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'center' }}>
+                                    <select
+                                        className="form-select"
+                                        value={selectedMonth}
+                                        onChange={(e) => setSelectedMonth(e.target.value)}
+                                        style={{ padding: '0.3rem 0.6rem', fontSize: '0.85rem', height: 'auto', minWidth: '130px', margin: 0 }}
+                                    >
+                                        {availableMonths.map(m => (
+                                            <option key={m} value={m}>{formatMonthLabel(m)}</option>
+                                        ))}
+                                    </select>
+                                    <button
+                                        className="btn-secondary"
+                                        onClick={() => {
+                                            if (chartMode === 'Revenue') setChartMode('Repairs');
+                                            else if (chartMode === 'Repairs') setChartMode('Profit');
+                                            else setChartMode('Revenue');
+                                        }}
+                                        style={{ padding: '0.4rem 0.75rem', fontSize: '0.85rem' }}
+                                    >
+                                        Switch to {chartMode === 'Revenue' ? 'Repairs' : chartMode === 'Repairs' ? 'Net Profit' : 'Revenue'}
+                                    </button>
+                                </div>
                             </div>
                             <div style={{ flex: 1, width: '100%', minHeight: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                                 {chartData.length === 0 ? (

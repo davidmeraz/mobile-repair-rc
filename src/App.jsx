@@ -22,7 +22,7 @@ function App() {
   const [repairs, setRepairs] = useState(mockData.repairs);
   // sort by ID descending just in case
 
-  const [parts, setParts] = useState([]);
+  const [parts, setParts] = useState(mockData.parts || []);
 
   const renderContent = () => {
     switch (activePage) {
