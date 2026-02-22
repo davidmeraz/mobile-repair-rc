@@ -1,5 +1,6 @@
-const { app, BrowserWindow } = require('electron');
+const { app, BrowserWindow, ipcMain } = require('electron');
 const path = require('path');
+const fs = require('fs');
 
 
 let splashWindow;
@@ -21,6 +22,45 @@ function createSplashWindow() {
 
     splashWindow.loadFile(path.join(__dirname, 'splash.html'));
     splashWindow.center();
+}
+
+function setupDatabaseIPC() {
+    const dbPath = path.join(app.getPath('userData'), 'database.json');
+
+    // Default empty structure
+    const defaultData = {
+        deviceModels: [],
+        customers: [],
+        repairs: [],
+        parts: []
+    };
+
+    // Ensure file exists
+    if (!fs.existsSync(dbPath)) {
+        fs.writeFileSync(dbPath, JSON.stringify(defaultData, null, 2), 'utf-8');
+    }
+
+    // Read handler
+    ipcMain.handle('db:read', async () => {
+        try {
+            const raw = fs.readFileSync(dbPath, 'utf-8');
+            return JSON.parse(raw);
+        } catch (error) {
+            console.error('Error reading DB:', error);
+            return defaultData;
+        }
+    });
+
+    // Write handler
+    ipcMain.handle('db:write', async (event, data) => {
+        try {
+            fs.writeFileSync(dbPath, JSON.stringify(data, null, 2), 'utf-8');
+            return true;
+        } catch (error) {
+            console.error('Error writing DB:', error);
+            return false;
+        }
+    });
 }
 
 function createMainWindow() {
@@ -72,6 +112,7 @@ function createMainWindow() {
 }
 
 function initApp() {
+    setupDatabaseIPC();
     createSplashWindow();
     createMainWindow();
 }

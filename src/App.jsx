@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import './App.css'
 import Sidebar from './components/Sidebar'
 import Header from './components/Header'
@@ -10,19 +10,55 @@ import Reports from './pages/Reports'
 import Settings from './pages/Settings'
 import DeviceModels from './pages/DeviceModels'
 
-import { generateMockData } from './data/mockData'
-
-const mockData = generateMockData();
-
 function App() {
   const [activePage, setActivePage] = useState('Dashboard');
   const [searchQuery, setSearchQuery] = useState('');
-  const [deviceModels, setDeviceModels] = useState(mockData.deviceModels);
-  const [customers, setCustomers] = useState(mockData.customers);
-  const [repairs, setRepairs] = useState(mockData.repairs);
-  // sort by ID descending just in case
 
-  const [parts, setParts] = useState(mockData.parts || []);
+  const [isLoaded, setIsLoaded] = useState(false);
+  const [deviceModels, setDeviceModels] = useState([]);
+  const [customers, setCustomers] = useState([]);
+  const [repairs, setRepairs] = useState([]);
+  const [parts, setParts] = useState([]);
+
+  useEffect(() => {
+    const loadDB = async () => {
+      try {
+        if (window.api && window.api.readData) {
+          const data = await window.api.readData();
+          setDeviceModels(data.deviceModels || []);
+          setCustomers(data.customers || []);
+          setRepairs(data.repairs || []);
+          setParts(data.parts || []);
+        } else {
+          console.warn("Electron API no está disponible. Usando datos vacíos (navegador puro).");
+        }
+      } catch (err) {
+        console.error("Error al cargar la BD:", err);
+      } finally {
+        setIsLoaded(true);
+      }
+    };
+    loadDB();
+  }, []);
+
+  useEffect(() => {
+    if (!isLoaded) return;
+    const saveDB = async () => {
+      try {
+        if (window.api && window.api.writeData) {
+          await window.api.writeData({
+            deviceModels,
+            customers,
+            repairs,
+            parts
+          });
+        }
+      } catch (e) {
+        console.error("Error al guardar la BD:", e);
+      }
+    };
+    saveDB();
+  }, [deviceModels, customers, repairs, parts, isLoaded]);
 
   const renderContent = () => {
     switch (activePage) {
@@ -36,6 +72,18 @@ function App() {
       default: return <Dashboard onNavigate={setActivePage} repairs={repairs} customers={customers} parts={parts} />;
     }
   };
+
+  if (!isLoaded) {
+    return (
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100vh', background: 'var(--bg-main)', color: 'white', flexDirection: 'column', gap: '1rem' }}>
+        <div className="spinner" style={{ width: '40px', height: '40px', border: '3px solid rgba(255,255,255,0.1)', borderTopColor: 'var(--accent)', borderRadius: '50%', animation: 'spin 1s linear infinite' }}></div>
+        <p style={{ color: 'var(--text-secondary)' }}>Cargando base de datos...</p>
+        <style>
+          {`@keyframes spin { 100% { transform: rotate(360deg); } }`}
+        </style>
+      </div>
+    );
+  }
 
   return (
     <div className="app-container">
