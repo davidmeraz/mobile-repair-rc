@@ -1,4 +1,4 @@
-const { app, BrowserWindow, ipcMain } = require('electron');
+const { app, BrowserWindow, ipcMain, dialog } = require('electron');
 const path = require('path');
 const fs = require('fs');
 
@@ -61,6 +61,75 @@ function setupDatabaseIPC() {
             return false;
         }
     });
+
+    // Export handler — save database to a user-chosen location
+    ipcMain.handle('db:export', async () => {
+        try {
+            const timestamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, 19);
+            const result = await dialog.showSaveDialog(mainWindow, {
+                title: 'Export Database Backup',
+                defaultPath: `mobile-repair-backup-${timestamp}.json`,
+                filters: [
+                    { name: 'JSON Files', extensions: ['json'] },
+                    { name: 'All Files', extensions: ['*'] }
+                ]
+            });
+
+            if (result.canceled || !result.filePath) {
+                return { success: false, canceled: true };
+            }
+
+            const raw = fs.readFileSync(dbPath, 'utf-8');
+            fs.writeFileSync(result.filePath, raw, 'utf-8');
+            return { success: true, path: result.filePath };
+        } catch (error) {
+            console.error('Error exporting DB:', error);
+            return { success: false, error: error.message };
+        }
+    });
+
+    // Import handler — load database from a user-chosen file
+    ipcMain.handle('db:import', async () => {
+        try {
+            const result = await dialog.showOpenDialog(mainWindow, {
+                title: 'Import Database Backup',
+                filters: [
+                    { name: 'JSON Files', extensions: ['json'] },
+                    { name: 'All Files', extensions: ['*'] }
+                ],
+                properties: ['openFile']
+            });
+
+            if (result.canceled || result.filePaths.length === 0) {
+                return { success: false, canceled: true };
+            }
+
+            const raw = fs.readFileSync(result.filePaths[0], 'utf-8');
+            const data = JSON.parse(raw);
+
+            // Validate the structure has at least one expected key
+            const validKeys = ['deviceModels', 'customers', 'repairs', 'parts'];
+            const hasValidKey = validKeys.some(key => Array.isArray(data[key]));
+
+            if (!hasValidKey) {
+                return { success: false, error: 'Invalid database format. The file must contain at least one of: deviceModels, customers, repairs, parts.' };
+            }
+
+            // Write to the actual database
+            const mergedData = {
+                deviceModels: data.deviceModels || [],
+                customers: data.customers || [],
+                repairs: data.repairs || [],
+                parts: data.parts || []
+            };
+            fs.writeFileSync(dbPath, JSON.stringify(mergedData, null, 2), 'utf-8');
+
+            return { success: true, data: mergedData, path: result.filePaths[0] };
+        } catch (error) {
+            console.error('Error importing DB:', error);
+            return { success: false, error: error.message };
+        }
+    });
 }
 
 function createMainWindow() {
@@ -69,12 +138,13 @@ function createMainWindow() {
 
     mainWindow = new BrowserWindow({
         width: Math.floor(width * 0.80),
-        height: Math.floor(height * 0.86),
+        height: Math.floor(height * 0.90),
         resizable: false, // Prevent resizing
         maximizable: false,
         movable: false, // Prevent moving
         center: true, // Center on screen explicitly
         show: false, // Start hidden
+        frame: false, // Frameless window — custom title bar
         autoHideMenuBar: true,
         backgroundColor: '#020617', // Pre-fill with correct background to avoid white flash
         webPreferences: {
@@ -83,6 +153,14 @@ function createMainWindow() {
             contextIsolation: false
         },
     });
+
+    // Window control IPC handlers
+    ipcMain.on('window:minimize', () => mainWindow?.minimize());
+    ipcMain.on('window:maximize', () => {
+        if (mainWindow?.isMaximized()) mainWindow.unmaximize();
+        else mainWindow?.maximize();
+    });
+    ipcMain.on('window:close', () => mainWindow?.close());
 
     const startUrl = process.env.ELECTRON_START_URL || `file://${path.join(__dirname, '../dist/index.html')}`;
 

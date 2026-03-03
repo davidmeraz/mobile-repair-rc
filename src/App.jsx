@@ -68,7 +68,7 @@ function App() {
       case 'Device Models': return <DeviceModels searchQuery={searchQuery} models={deviceModels} setModels={setDeviceModels} />;
       case 'Inventory': return <Inventory searchQuery={searchQuery} parts={parts} setParts={setParts} repairs={repairs} setRepairs={setRepairs} customers={customers} />;
       case 'Reports': return <Reports repairs={repairs} parts={parts} />;
-      case 'Settings': return <Settings onNavigate={setActivePage} />;
+      case 'Settings': return <Settings onNavigate={setActivePage} deviceModels={deviceModels} setDeviceModels={setDeviceModels} customers={customers} setCustomers={setCustomers} repairs={repairs} setRepairs={setRepairs} parts={parts} setParts={setParts} />;
       default: return <Dashboard onNavigate={setActivePage} repairs={repairs} customers={customers} parts={parts} />;
     }
   };
